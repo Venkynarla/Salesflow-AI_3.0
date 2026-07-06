@@ -1,0 +1,1969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SalesFlow — AI Sales Automation</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:   #16213e;
+    --navy2:  #1f2f57;
+    --orange: #f97316;
+    --orange2:#ea6c0a;
+    --pink:   #ec4899;
+    --bg:     #f3f5fb;
+    --white:  #ffffff;
+    --border: #e1e6f2;
+    --text:   #16213e;
+    --muted:  #6b7a9a;
+    --green:  #16a34a;
+    --red:    #dc2626;
+    --amber:  #d97706;
+    --purple: #7c3aed;
+    --teal:   #0891b2;
+    --grad1: linear-gradient(135deg,#f97316,#ec4899);
+    --grad2: linear-gradient(135deg,#7c3aed,#0891b2);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: "Inter", sans-serif; font-size: 14px; overflow-x:hidden; }
+  h1,h2,h3,.brandfont { font-family:"Space Grotesk", "Inter", sans-serif; }
+
+  /* ── Animated background blobs ── */
+  .bg-blobs { position:fixed; inset:0; z-index:-1; overflow:hidden; pointer-events:none; }
+  .blob { position:absolute; border-radius:50%; filter:blur(70px); opacity:.16; animation: float 22s ease-in-out infinite; }
+  .blob.b1 { width:480px; height:480px; background:var(--orange); top:-160px; left:-120px; animation-duration:26s; }
+  .blob.b2 { width:420px; height:420px; background:var(--purple); top:40%; right:-160px; animation-duration:30s; animation-delay:-8s; }
+  .blob.b3 { width:360px; height:360px; background:var(--teal); bottom:-140px; left:30%; animation-duration:24s; animation-delay:-4s; }
+  @keyframes float { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(40px,-30px) scale(1.08)} 66%{transform:translate(-30px,20px) scale(0.95)} }
+
+  /* ── Layout ── */
+  .app { display: flex; min-height: 100vh; }
+  .sidebar { width: 236px; background: linear-gradient(180deg,var(--navy),#0f1730); display: flex; flex-direction: column; position: fixed; top:0; left:0; bottom:0; z-index:100; }
+  .main { margin-left: 236px; flex:1; display:flex; flex-direction:column; min-height:100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar-logo { padding: 24px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .logo-mark { display:flex; align-items:center; gap:10px; }
+  .logo-icon { width:38px; height:38px; background:var(--grad1); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:800; color:#fff; box-shadow:0 6px 18px rgba(249,115,22,.35); }
+  .logo-text { font-size:19px; font-weight:700; color:#fff; letter-spacing:-0.3px; }
+  .logo-text span { background:var(--grad1); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .logo-sub { font-size:10px; color:rgba(255,255,255,0.4); margin-top:4px; letter-spacing:1.4px; text-transform:uppercase; }
+  .sidebar-nav { padding: 16px 0; flex:1; overflow-y:auto; }
+  .nav-label { padding: 10px 20px 6px; font-size:10px; color:rgba(255,255,255,0.32); text-transform:uppercase; letter-spacing:1.2px; font-weight:600; }
+  .nav-item { display:flex; align-items:center; gap:10px; padding:11px 20px; cursor:pointer; color:rgba(255,255,255,0.62); font-size:13.5px; border:none; background:none; width:100%; text-align:left; transition:all 0.18s; border-left:3px solid transparent; position:relative; }
+  .nav-item:hover { color:#fff; background:rgba(255,255,255,0.06); }
+  .nav-item.active { color:#fff; background:rgba(249,115,22,0.14); border-left-color:var(--orange); }
+  .nav-item svg { width:16px; height:16px; flex-shrink:0; }
+  .nav-badge { margin-left:auto; background:var(--orange); color:#fff; font-size:10px; font-weight:700; padding:1px 7px; border-radius:10px; }
+  .sidebar-footer { padding:14px 16px; border-top:1px solid rgba(255,255,255,0.08); }
+  .status-pill { display:flex; align-items:center; gap:6px; font-size:11px; color:rgba(255,255,255,0.55); padding:6px 4px; }
+  .status-dot { width:7px; height:7px; border-radius:50%; background:#22c55e; animation: blink 2s infinite; box-shadow:0 0 8px #22c55e; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .user-chip { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.06); border-radius:9px; padding:8px 10px; margin-top:6px; cursor:pointer; transition:background .15s; }
+  .user-chip:hover { background:rgba(255,255,255,.11); }
+  .user-avatar { width:26px; height:26px; border-radius:50%; background:var(--grad2); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; flex-shrink:0; }
+  .user-chip-name { font-size:12px; color:#fff; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .user-chip-role { font-size:10px; color:rgba(255,255,255,.45); }
+
+  /* ── Topbar ── */
+  .topbar { background:rgba(255,255,255,.85); backdrop-filter:blur(10px); border-bottom:1px solid var(--border); padding:14px 28px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+  .topbar-title { font-size:19px; font-weight:700; color:var(--navy); letter-spacing:-.3px; }
+  .topbar-right { display:flex; gap:10px; align-items:center; }
+
+  /* ── Buttons ── */
+  .btn { display:inline-flex; align-items:center; gap:6px; padding:9px 16px; border-radius:9px; font-size:13px; font-weight:600; cursor:pointer; border:none; font-family:inherit; transition:transform .15s ease, box-shadow .15s ease, background .15s ease; white-space:nowrap; position:relative; }
+  .btn:active { transform:scale(.96); }
+  .btn-primary { background:var(--grad1); color:#fff; box-shadow:0 4px 14px rgba(249,115,22,.3); }
+  .btn-primary:hover { box-shadow:0 6px 20px rgba(249,115,22,.45); transform:translateY(-1px); }
+  .btn-navy { background:var(--navy); color:#fff; }
+  .btn-navy:hover { background:var(--navy2); transform:translateY(-1px); }
+  .btn-ghost { background:#fff; color:var(--muted); border:1px solid var(--border); }
+  .btn-ghost:hover { color:var(--text); border-color:#c7cfe6; background:#f8faff; }
+  .btn-danger { background:#fef2f2; color:var(--red); border:1px solid #fecaca; }
+  .btn-danger:hover { background:#fee2e2; }
+  .btn-success { background:#f0fdf4; color:var(--green); border:1px solid #bbf7d0; }
+  .btn-success:hover { background:#dcfce7; }
+  .btn-sm { padding:6px 11px; font-size:12px; border-radius:7px; }
+  .btn-xs { padding:4px 9px; font-size:11px; border-radius:6px; }
+  .btn:disabled { opacity:.55; cursor:not-allowed; transform:none !important; }
+  .btn-icon { width:34px; height:34px; padding:0; justify-content:center; border-radius:9px; }
+
+  /* ── Content ── */
+  .content { padding:26px 30px 60px; flex:1; }
+
+  /* ── Stats ── */
+  .stats-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:14px; margin-bottom:24px; }
+  .stat-card { background:var(--white); border:1px solid var(--border); border-radius:14px; padding:18px; box-shadow:0 1px 3px rgba(20,30,60,0.04); cursor:pointer; position:relative; overflow:hidden; transition:transform .18s ease, box-shadow .18s ease; opacity:0; animation:riseIn .5s ease forwards; }
+  .stat-card:nth-child(1){animation-delay:.02s} .stat-card:nth-child(2){animation-delay:.06s} .stat-card:nth-child(3){animation-delay:.10s}
+  .stat-card:nth-child(4){animation-delay:.14s} .stat-card:nth-child(5){animation-delay:.18s} .stat-card:nth-child(6){animation-delay:.22s}
+  @keyframes riseIn { from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)} }
+  @keyframes pulseCard { 0%,100%{box-shadow:0 1px 3px rgba(20,30,60,.04)} 50%{box-shadow:0 0 0 4px rgba(220,38,38,.25)} }
+  .stat-card:hover { transform:translateY(-3px); box-shadow:0 14px 28px rgba(22,33,62,.12); }
+  .stat-card::before { content:""; position:absolute; top:0; left:0; width:4px; height:100%; background:var(--navy); }
+  .stat-card.c-orange::before { background:var(--grad1); } .stat-card.c-green::before { background:var(--green); }
+  .stat-card.c-purple::before { background:var(--purple); } .stat-card.c-red::before { background:var(--red); }
+  .stat-card.c-teal::before { background:var(--teal); }
+  .stat-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; font-weight:600; margin-bottom:10px; }
+  .stat-value { font-size:32px; font-weight:700; letter-spacing:-1px; color:var(--navy); font-family:"Space Grotesk",sans-serif; }
+  .stat-value.orange { color:var(--orange); } .stat-value.green { color:var(--green); }
+  .stat-value.purple { color:var(--purple); } .stat-value.red { color:var(--red); } .stat-value.teal { color:var(--teal); }
+
+  /* ── Table ── */
+  .card { background:var(--white); border:1px solid var(--border); border-radius:14px; overflow:hidden; box-shadow:0 1px 3px rgba(20,30,60,0.04); }
+  table { width:100%; border-collapse:collapse; }
+  th { text-align:left; padding:11px 16px; font-size:11px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:0.6px; border-bottom:1px solid var(--border); background:#f8faff; }
+  td { padding:12px 16px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  tr:last-child td { border-bottom:none; }
+  tbody tr { transition: background .14s ease; }
+  tbody tr:hover td { background:#f8faff; }
+
+  /* ── Badges ── */
+  .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; }
+  .badge::before { content:""; width:5px; height:5px; border-radius:50%; }
+  .badge-pending    { background:#f1f5f9; color:#64748b; } .badge-pending::before { background:#94a3b8; }
+  .badge-enriching  { background:#e0f2fe; color:#0369a1; } .badge-enriching::before { background:#38bdf8; animation:blink 1s infinite; }
+  .badge-enriched   { background:#e0f2fe; color:#0369a1; } .badge-enriched::before { background:#0ea5e9; }
+  .badge-drafting   { background:#f3e8ff; color:#7c3aed; } .badge-drafting::before { background:#a78bfa; animation:blink 1s infinite; }
+  .badge-draft_ready{ background:#fef3c7; color:#92400e; } .badge-draft_ready::before { background:#f59e0b; }
+  .badge-approved   { background:#fff7ed; color:#c2410c; } .badge-approved::before { background:var(--orange); }
+  .badge-sent       { background:#f0fdf4; color:#166534; } .badge-sent::before { background:#22c55e; }
+  .badge-followed_up{ background:#dcfce7; color:#15803d; } .badge-followed_up::before { background:#16a34a; }
+  .badge-replied    { background:#d1fae5; color:#065f46; } .badge-replied::before { background:#10b981; }
+  .badge-bounced    { background:#fef3c7; color:#92400e; } .badge-bounced::before { background:#f59e0b; }
+  .badge-error      { background:#fef2f2; color:#991b1b; } .badge-error::before { background:#ef4444; }
+  .badge-done       { background:#f0fdf4; color:#166534; } .badge-done::before { background:#22c55e; }
+  .badge-generated  { background:#fef3c7; color:#92400e; } .badge-generated::before { background:#f59e0b; }
+  .badge-in_progress{ background:#f3e8ff; color:#7c3aed; } .badge-in_progress::before { background:#a78bfa; animation:blink 1s infinite; }
+
+  /* ── Forms ── */
+  .form-group { margin-bottom:16px; }
+  label { display:block; font-size:12px; color:var(--muted); margin-bottom:5px; font-weight:600; }
+  input, select, textarea { width:100%; background:var(--white); border:1.5px solid var(--border); border-radius:9px; padding:9px 12px; color:var(--text); font-family:inherit; font-size:13.5px; outline:none; transition:border-color 0.15s, box-shadow .15s; }
+  input:focus, select:focus, textarea:focus { border-color:var(--orange); box-shadow:0 0 0 3px rgba(249,115,22,0.12); }
+  textarea { resize:vertical; line-height:1.6; }
+
+  /* ── Modal ── */
+  .modal-overlay { position:fixed; inset:0; background:rgba(15,23,48,0.55); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; pointer-events:none; transition:opacity 0.2s; backdrop-filter:blur(3px); }
+  .modal-overlay.open { opacity:1; pointer-events:all; }
+  .modal { background:var(--white); border-radius:16px; width:100%; max-width:580px; max-height:90vh; overflow-y:auto; box-shadow:0 30px 80px rgba(15,23,48,0.3); transform:translateY(14px) scale(.98); transition:transform .22s ease; }
+  .modal-overlay.open .modal { transform:translateY(0) scale(1); }
+  .modal-header { padding:20px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; background:#fff; z-index:2; }
+  .modal-title { font-size:17px; font-weight:700; color:var(--navy); }
+  .modal-close { background:none; border:none; color:var(--muted); cursor:pointer; font-size:22px; line-height:1; padding:2px 8px; border-radius:7px; transition:.15s; }
+  .modal-close:hover { color:var(--text); background:var(--bg); }
+  .modal-body { padding:20px 24px; }
+  .modal-footer { padding:16px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px; background:#f8faff; border-radius:0 0 16px 16px; flex-wrap:wrap; }
+
+  /* ── Views ── */
+  .view { display:none; }
+  .view.active { display:block; animation:fadeUp .35s ease; }
+  @keyframes fadeUp { from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }
+
+  /* ── Upload zone ── */
+  .upload-zone { border:2px dashed var(--border); border-radius:12px; padding:36px; text-align:center; cursor:pointer; transition:all 0.2s; background:#f8faff; }
+  .upload-zone:hover, .upload-zone.dragging { border-color:var(--orange); background:#fff7ed; transform:scale(1.01); }
+  .upload-icon { font-size:30px; margin-bottom:8px; }
+
+  /* ── Toast ── */
+  .toast-wrap { position:fixed; bottom:24px; right:24px; z-index:2000; display:flex; flex-direction:column; gap:8px; }
+  .toast { background:var(--white); border:1px solid var(--border); border-radius:10px; padding:12px 16px; font-size:13px; display:flex; align-items:center; gap:10px; min-width:280px; box-shadow:0 10px 30px rgba(15,23,48,.16); animation:slideIn 0.25s; }
+  .toast.success { border-left:4px solid var(--green); } .toast.error { border-left:4px solid var(--red); } .toast.info { border-left:4px solid var(--orange); }
+  @keyframes slideIn { from{transform:translateX(30px);opacity:0} to{transform:translateX(0);opacity:1} }
+
+  /* ── Tabs ── */
+  .tabs { display:flex; border-bottom:2px solid var(--border); margin-bottom:20px; gap:2px; }
+  .tab { padding:10px 16px; font-size:13px; cursor:pointer; color:var(--muted); border-bottom:2px solid transparent; margin-bottom:-2px; transition:all 0.15s; background:none; border-top:none; border-left:none; border-right:none; font-family:inherit; font-weight:600; }
+  .tab:hover { color:var(--navy); }
+  .tab.active { color:var(--orange); border-bottom-color:var(--orange); }
+
+  /* ── Detail grid ── */
+  .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .detail-item { background:var(--bg); border-radius:10px; padding:12px; }
+  .detail-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; font-weight:700; margin-bottom:4px; }
+  .detail-value { font-size:13.5px; color:var(--navy); font-weight:600; }
+
+  /* ── Campaign cards ── */
+  .campaigns-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:16px; }
+  .campaign-card { background:var(--white); border:1px solid var(--border); border-radius:14px; padding:20px; cursor:pointer; transition:all 0.18s; box-shadow:0 1px 3px rgba(20,30,60,0.04); }
+  .campaign-card:hover { border-color:var(--orange); box-shadow:0 12px 28px rgba(249,115,22,0.14); transform:translateY(-3px); }
+  .campaign-name { font-size:15.5px; font-weight:700; color:var(--navy); margin-bottom:4px; }
+  .campaign-meta { font-size:12px; color:var(--muted); margin-bottom:8px; }
+  .campaign-vp { font-size:12px; color:var(--muted); line-height:1.5; margin-bottom:10px; }
+  .campaign-steps-preview { display:flex; flex-wrap:wrap; gap:4px; }
+  .step-chip { font-size:10px; padding:2px 8px; border-radius:12px; background:#eef1fb; color:var(--navy); font-weight:600; }
+  .campaign-add { border-style:dashed; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:var(--muted); font-size:13px; min-height:140px; }
+  .campaign-add:hover { color:var(--orange); border-color:var(--orange); }
+
+  /* ── Empty state ── */
+  .empty-state { text-align:center; padding:60px 20px; color:var(--muted); }
+  .empty-icon { font-size:38px; margin-bottom:12px; }
+  .empty-state h3 { font-size:16px; font-weight:700; color:var(--navy); margin-bottom:8px; }
+
+  /* ── Filter bar ── */
+  .filter-bar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+  .filter-bar input { width:220px; }
+  .filter-bar select { width:170px; }
+
+  /* ── LinkedIn info ── */
+  .linkedin-box { background:var(--bg); border-radius:10px; padding:14px; margin-top:12px; }
+  .linkedin-headline { font-weight:700; color:var(--navy); margin-bottom:4px; }
+  .linkedin-summary { font-size:12px; color:var(--muted); line-height:1.6; }
+
+  /* ── Action row ── */
+  .action-row { display:flex; gap:6px; flex-wrap:wrap; }
+
+  .section-subtitle { color:var(--muted); font-size:13px; margin-top:4px; }
+  .dashboard-actions { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px; margin-top:10px; }
+  .pending-actions-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; }
+  .pending-step-card { background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:14px; cursor:pointer; transition:all .15s ease; }
+  .pending-step-card:hover { border-color:var(--orange); transform:translateY(-2px); box-shadow:0 10px 22px rgba(249,115,22,.12); }
+  .pending-step-card .psc-count { font-size:24px; font-weight:700; color:var(--navy); font-family:"Space Grotesk",sans-serif; }
+  .pending-step-card.zero .psc-count { color:#c3cadf; }
+  .pending-step-card .psc-label { font-size:12px; color:var(--muted); font-weight:600; margin-top:4px; }
+  #duplicates-card { cursor:pointer; transition:all .15s ease; }
+  #duplicates-card:hover { border-color:var(--red); box-shadow:0 10px 22px rgba(220,38,38,.1); transform:translateY(-2px); }
+
+  .list-type-row { display:flex; justify-content:space-between; align-items:center; padding:7px 10px; border-radius:8px; background:var(--bg); font-size:12.5px; }
+  .badge-lead { background:#eef2ff; color:#4338ca; } .badge-lead::before { background:#818cf8; content:""; width:5px; height:5px; border-radius:50%; }
+  .badge-client { background:#ecfdf5; color:#047857; } .badge-client::before { background:#34d399; content:""; width:5px; height:5px; border-radius:50%; }
+  .badge-not_interested { background:#fef2f2; color:#b91c1c; } .badge-not_interested::before { background:#f87171; content:""; width:5px; height:5px; border-radius:50%; }
+  .badge-prospect { background:#f1f5f9; color:#475569; } .badge-prospect::before { background:#94a3b8; content:""; width:5px; height:5px; border-radius:50%; }
+  .badge-hold { background:#fff7ed; color:#c2410c; } .badge-hold::before { background:var(--orange); content:""; width:5px; height:5px; border-radius:50%; }
+
+  /* ── Global loading banner (full-width, non-blocking) ── */
+  .loading-banner { position:fixed; top:0; left:236px; right:0; z-index:1500; background:linear-gradient(135deg,#1f2f57,#16213e); color:#fff; padding:12px 24px; display:none; align-items:center; gap:14px; box-shadow:0 6px 20px rgba(22,33,62,.25); animation:fadeUp .25s ease; }
+  .loading-banner.active { display:flex; }
+  .loading-banner .spinner { width:18px; height:18px; border-radius:50%; border:2.5px solid rgba(255,255,255,.25); border-top-color:var(--orange); animation:spin .7s linear infinite; flex-shrink:0; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .loading-banner .lb-text { font-size:13px; font-weight:600; }
+  .loading-banner .lb-sub { font-size:11.5px; color:rgba(255,255,255,.65); }
+  .loading-banner .lb-track { flex:1; height:5px; background:rgba(255,255,255,.15); border-radius:99px; overflow:hidden; max-width:220px; }
+  .loading-banner .lb-fill { height:100%; background:var(--grad1); width:30%; animation:lbmove 1.3s ease-in-out infinite; }
+  @keyframes lbmove { 0%{margin-left:-30%} 50%{margin-left:70%} 100%{margin-left:-30%} }
+  @media (max-width:900px) { .loading-banner { left:0; } }
+
+  /* ══════════════════════════════════════════════════════════════
+     ADMIN CONSOLE — a deliberately different theme so switching into
+     it feels like entering a separate application, not just a modal.
+     ══════════════════════════════════════════════════════════════ */
+  :root {
+    --admin-bg:     #120b26;
+    --admin-bg2:    #1a1140;
+    --admin-card:   #1d1440;
+    --admin-border: #342a5e;
+    --admin-text:   #f3efff;
+    --admin-muted:  #b3a4dd;
+    --admin-accent: #a855f7;
+    --admin-accent2:#6366f1;
+    --admin-grad:   linear-gradient(135deg,#a855f7,#6366f1);
+  }
+  .admin-app {
+    position: fixed; inset: 0; z-index: 3000;
+    background: radial-gradient(circle at 15% 0%, #241755 0%, var(--admin-bg) 55%);
+    display: none; opacity: 0; transition: opacity .25s ease;
+    font-family: "Inter", sans-serif;
+  }
+  .admin-app.open { display: flex; opacity: 1; animation: adminEnter .35s ease; }
+  @keyframes adminEnter { from { opacity:0; transform:scale(.98); } to { opacity:1; transform:scale(1); } }
+  .admin-sidebar {
+    width: 250px; flex-shrink: 0; background: linear-gradient(180deg,#1a1140,#120b26);
+    border-right: 1px solid var(--admin-border); display: flex; flex-direction: column;
+  }
+  .admin-logo { padding: 24px 20px 20px; border-bottom: 1px solid var(--admin-border); display:flex; align-items:center; gap:10px; }
+  .admin-logo-icon { width:38px; height:38px; background:var(--admin-grad); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:800; color:#fff; box-shadow:0 6px 18px rgba(168,85,247,.4); }
+  .admin-logo-text { font-size:18px; font-weight:700; color:#fff; font-family:"Space Grotesk",sans-serif; }
+  .admin-logo-text span { background:var(--admin-grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .admin-logo-sub { font-size:10px; color:var(--admin-muted); margin-top:3px; letter-spacing:1px; text-transform:uppercase; }
+  .admin-nav { padding:16px 0; flex:1; }
+  .admin-nav-item { display:flex; align-items:center; gap:10px; padding:12px 20px; cursor:pointer; color:var(--admin-muted); font-size:13.5px; border:none; background:none; width:100%; text-align:left; transition:.18s; border-left:3px solid transparent; font-family:inherit; }
+  .admin-nav-item svg { width:16px; height:16px; flex-shrink:0; }
+  .admin-nav-item:hover { color:#fff; background:rgba(168,85,247,.08); }
+  .admin-nav-item.active { color:#fff; background:rgba(168,85,247,.16); border-left-color:var(--admin-accent); }
+  .admin-exit-wrap { padding:16px; border-top:1px solid var(--admin-border); }
+  .admin-exit-btn { width:100%; background:rgba(255,255,255,.06); color:#fff; border:1px solid var(--admin-border); }
+  .admin-exit-btn:hover { background:rgba(255,255,255,.12); }
+  .admin-main { flex:1; display:flex; flex-direction:column; overflow-y:auto; }
+  .admin-topbar { padding:18px 30px; border-bottom:1px solid var(--admin-border); background:rgba(255,255,255,.02); }
+  .admin-topbar-title { font-size:21px; font-weight:700; color:#fff; font-family:"Space Grotesk",sans-serif; margin-bottom:4px; }
+  .admin-content { padding:26px 30px 60px; flex:1; color: var(--admin-text); }
+  .admin-content .card { background: var(--admin-card); border-color: var(--admin-border); }
+  .admin-content table { color: var(--admin-text); }
+  .admin-content th { background: rgba(255,255,255,.03); color: var(--admin-muted); border-bottom-color: var(--admin-border); }
+  .admin-content td { border-bottom-color: var(--admin-border); }
+  .admin-content tbody tr:hover td { background: rgba(168,85,247,.06); }
+  .admin-btn-ghost { background: rgba(255,255,255,.05); color: var(--admin-text); border:1px solid var(--admin-border); }
+  .admin-btn-ghost:hover { background: rgba(255,255,255,.1); }
+  .admin-stats-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
+  .admin-user-card { background: var(--admin-card); border:1px solid var(--admin-border); border-radius:14px; padding:18px; cursor:pointer; transition:all .18s ease; }
+  .admin-user-card:hover { border-color: var(--admin-accent); box-shadow:0 14px 30px rgba(168,85,247,.18); transform:translateY(-3px); }
+  .admin-user-card.restricted { border-color:#dc2626; opacity:.75; }
+  .admin-user-card .auc-name { font-weight:700; color:#fff; font-size:14.5px; margin-bottom:8px; }
+  .admin-user-card .auc-count { font-size:26px; font-weight:700; color: var(--admin-accent); font-family:"Space Grotesk",sans-serif; }
+  .admin-user-card .auc-sub { font-size:11px; color: var(--admin-muted); margin-top:4px; }
+  .admin-row-card { display:flex; align-items:center; gap:10px; padding:12px; border:1px solid var(--admin-border); border-radius:10px; background: var(--admin-card); }
+  .admin-row-card select { background:#241a4d; color:#fff; border-color:var(--admin-border); }
+  .admin-activity-row { display:flex; gap:10px; padding:9px 11px; background: var(--admin-card); border:1px solid var(--admin-border); border-radius:8px; font-size:12px; color:var(--admin-text); }
+  @media (max-width:900px) { .admin-sidebar { position:fixed; left:0; top:0; bottom:0; transform:translateX(-100%); } }
+
+
+  /* ── Email preview (mail-like) ── */
+  .mail-preview { background:#fff; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  .mail-preview .mail-subject { padding:10px 14px; background:var(--bg); border-bottom:1px solid var(--border); font-weight:700; color:var(--navy); font-size:13px; }
+  .mail-preview .mail-body { padding:14px; white-space:pre-wrap; line-height:1.7; font-size:12.5px; color:var(--text); max-height:220px; overflow:auto; }
+
+  .action-card { background:#fff; border:1px solid var(--border); border-radius:14px; padding:16px; transition:all .18s ease; cursor:pointer; }
+  .action-card:hover { border-color:rgba(249,115,22,.5); box-shadow:0 14px 30px rgba(22,33,62,.1); transform:translateY(-3px); }
+  .action-card strong { display:block; color:var(--navy); margin-bottom:4px; font-size:14px; }
+
+  .bulk-bar { display:none; align-items:center; gap:10px; background:linear-gradient(135deg,#1f2f57,#16213e); border-radius:12px; padding:12px 16px; margin-bottom:14px; box-shadow:0 10px 24px rgba(22,33,62,.18); flex-wrap:wrap; }
+  .bulk-bar.active { display:flex; animation:fadeUp .25s ease; }
+  .bulk-bar strong { color:#fff; }
+  .bulk-bar select { max-width:220px; }
+
+  .progress-strip { display:none; min-width:230px; }
+  .progress-strip.active { display:block; }
+  .progress-track { height:8px; background:#e5e7eb; border-radius:999px; overflow:hidden; margin-top:6px; }
+  .progress-track i { display:block; height:100%; width:0%; background:var(--grad1); transition:width .35s ease; background-size:200% 100%; animation:shimmerbar 1.4s linear infinite; }
+  @keyframes shimmerbar { 0%{background-position:0% 0} 100%{background-position:200% 0} }
+
+  /* ── Section card headers ── */
+  .section-head { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+  .section-head h2 { font-size:23px; color:var(--navy); letter-spacing:-.4px; }
+
+  /* ── Pipeline funnel ── */
+  .funnel-wrap { display:flex; flex-direction:column; gap:8px; }
+  .funnel-row { display:flex; align-items:center; gap:12px; cursor:pointer; padding:6px; border-radius:8px; transition:background .15s; }
+  .funnel-row:hover { background:#f8faff; }
+  .funnel-label { width:150px; font-size:12.5px; color:var(--navy); font-weight:600; flex-shrink:0; }
+  .funnel-bar-bg { flex:1; height:14px; background:#eef1fb; border-radius:7px; overflow:hidden; }
+  .funnel-bar-fill { height:100%; border-radius:7px; background:var(--grad2); width:0%; transition:width .8s cubic-bezier(.2,.8,.2,1); }
+  .funnel-count { width:34px; text-align:right; font-size:12.5px; font-weight:700; color:var(--navy); flex-shrink:0; }
+
+  /* ── Pipeline stepper (contact detail) ── */
+  .stepper { display:flex; flex-direction:column; gap:10px; }
+  .step-card { border:1px solid var(--border); border-radius:12px; padding:14px; background:#fff; transition:box-shadow .15s, border-color .15s; }
+  .step-card.is-next { border-color:var(--orange); box-shadow:0 0 0 3px rgba(249,115,22,.12); }
+  .step-card-head { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .step-num { width:26px; height:26px; border-radius:50%; background:var(--bg); color:var(--navy); font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .step-card.is-done .step-num { background:var(--green); color:#fff; }
+  .step-title { font-weight:700; color:var(--navy); font-size:13.5px; }
+  .step-kind { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
+  .step-body { margin-top:10px; }
+  .step-content-box { background:var(--bg); border-radius:8px; padding:10px; font-size:12.5px; color:var(--text); white-space:pre-wrap; line-height:1.6; max-height:170px; overflow:auto; }
+
+  /* ── Campaign builder (drag & drop) ── */
+  .builder-wrap { display:grid; grid-template-columns:1fr 1.3fr; gap:16px; margin-top:6px; }
+  .builder-col-title { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; font-weight:700; margin-bottom:8px; }
+  .palette-item { background:#fff; border:1.5px dashed var(--border); border-radius:9px; padding:9px 12px; margin-bottom:8px; cursor:grab; font-size:12.5px; font-weight:600; color:var(--navy); display:flex; align-items:center; gap:8px; transition:.15s; }
+  .palette-item:hover { border-color:var(--orange); background:#fff7ed; }
+  .sequence-list { min-height:120px; background:var(--bg); border-radius:10px; padding:10px; display:flex; flex-direction:column; gap:8px; }
+  .sequence-item { background:#fff; border:1px solid var(--border); border-radius:9px; padding:9px 12px; display:flex; align-items:center; gap:8px; cursor:grab; font-size:12.5px; font-weight:600; color:var(--navy); box-shadow:0 1px 2px rgba(20,30,60,.04); }
+  .sequence-item.dragging { opacity:.4; }
+  .sequence-item .seq-order { width:20px; height:20px; border-radius:50%; background:var(--grad1); color:#fff; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .sequence-item .remove-x { margin-left:auto; color:var(--muted); cursor:pointer; font-size:15px; padding:0 4px; }
+  .sequence-item .remove-x:hover { color:var(--red); }
+  .drop-hint { text-align:center; color:var(--muted); font-size:11.5px; padding:14px; border:1.5px dashed var(--border); border-radius:9px; }
+
+  /* ── magnetic hover ── */
+  .magnetic { will-change: transform; }
+
+  /* ── Auth banner ── */
+  .auth-banner { display:flex; align-items:center; gap:10px; }
+
+  ::-webkit-scrollbar { width:9px; height:9px; }
+  ::-webkit-scrollbar-thumb { background:#c9d2ea; border-radius:6px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+
+  @media (max-width:900px) {
+    .sidebar { transform:translateX(-100%); transition:transform .2s; }
+    .sidebar.open { transform:translateX(0); }
+    .main { margin-left:0; }
+    .builder-wrap { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-blobs"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+
+<div class="loading-banner" id="loading-banner">
+  <div class="spinner"></div>
+  <div>
+    <div class="lb-text" id="lb-text">Working…</div>
+    <div class="lb-sub" id="lb-sub">This may take a moment — please don't reload. Feel free to switch tabs while you wait.</div>
+  </div>
+  <div class="lb-track"><div class="lb-fill"></div></div>
+</div>
+
+
+<div class="app">
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <div class="logo-icon">S</div>
+      <div>
+        <div class="logo-text">Sales<span>Flow</span></div>
+        <div class="logo-sub">AI Outreach</div>
+      </div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-label">Main</div>
+    <button class="nav-item active" onclick="showView('dashboard',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-item" onclick="showView('contacts',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Contacts
+      <span class="nav-badge" id="nav-contacts-badge" style="display:none">0</span>
+    </button>
+    <button class="nav-item" onclick="showView('campaigns',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Campaigns
+    </button>
+    <div class="nav-label" style="margin-top:14px">Actions</div>
+    <button class="nav-item" onclick="openUploadModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Upload Contacts
+    </button>
+    <button class="nav-item" onclick="openCampaignModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New Campaign
+    </button>
+    <button class="nav-item" id="admin-nav-item" onclick="openAdminModal()" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6z"/></svg>
+      Admin Panel
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="status-pill"><div class="status-dot"></div> Server connected</div>
+    <div class="user-chip" id="user-chip" onclick="openAuthModal()">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <div style="overflow:hidden">
+        <div class="user-chip-name" id="user-chip-name">Guest mode</div>
+        <div class="user-chip-role" id="user-chip-role">Tap to sign in</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Dashboard</div>
+    <div class="topbar-right">
+      <div class="progress-strip" id="pipeline-progress">
+        <div id="pipeline-progress-text" style="font-size:11px;color:var(--muted);font-weight:700">0/0 completed</div>
+        <div class="progress-track"><i id="pipeline-progress-bar"></i></div>
+      </div>
+      <button class="btn btn-ghost btn-sm magnetic" onclick="openContactModalNew()">+ Add Contact</button>
+      <button class="btn btn-primary btn-sm magnetic" id="bulk-pipeline-btn" onclick="runBulkPipeline()">▶ Run Pipeline</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Dashboard -->
+    <div class="view active" id="view-dashboard">
+      <div class="section-head">
+        <div><h2>SalesFlow Dashboard</h2><div class="section-subtitle">Executive view of outreach status, action queues, and campaign health.</div></div>
+        <button class="btn btn-ghost btn-sm" onclick="loadDashboard()">↻ Refresh</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card" onclick="goContacts('')"><div class="stat-label">Total Contacts</div><div class="stat-value" data-count id="stat-total">0</div></div>
+        <div class="stat-card c-orange" onclick="goContacts('pending')"><div class="stat-label">Pending</div><div class="stat-value orange" data-count id="stat-pending">0</div></div>
+        <div class="stat-card c-purple" onclick="goContacts('draft_ready')"><div class="stat-label">Draft Ready</div><div class="stat-value purple" data-count id="stat-draft_ready">0</div></div>
+        <div class="stat-card c-teal" onclick="goContacts('sent')"><div class="stat-label">Sent</div><div class="stat-value teal" data-count id="stat-sent">0</div></div>
+        <div class="stat-card c-green" onclick="goContacts('replied')"><div class="stat-label">Replied</div><div class="stat-value green" data-count id="stat-replied">0</div></div>
+        <div class="stat-card c-red" onclick="goContacts('error')"><div class="stat-label">Errors</div><div class="stat-value red" data-count id="stat-error">0</div></div>
+      </div>
+
+      <div class="card" style="padding:20px;margin-top:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+          <div style="font-weight:700;color:var(--navy);font-size:14.5px">Pending actions — by pipeline step</div>
+          <div class="section-subtitle" style="margin:0">Click any step to see exactly which contacts need it</div>
+        </div>
+        <div class="pending-actions-grid" id="pending-actions-grid"></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;margin-top:18px" id="dashboard-lower">
+        <div class="card" style="padding:20px" id="duplicates-card" onclick="goDuplicates()">
+          <div style="font-weight:700;color:var(--navy);margin-bottom:6px;font-size:14.5px">⚠ Possible Duplicates</div>
+          <div class="stat-value orange" id="dup-count" style="font-size:26px">0</div>
+          <div class="section-subtitle" style="margin-top:6px">Click to review, hold, or delete</div>
+        </div>
+        <div class="card" style="padding:20px;cursor:pointer" id="skipped-card" onclick="openSkippedModal()">
+          <div style="font-weight:700;color:var(--navy);margin-bottom:6px;font-size:14.5px">⏭ Skipped Imports</div>
+          <div class="stat-value red" id="skipped-count" style="font-size:26px">0</div>
+          <div class="section-subtitle" style="margin-top:6px">See exactly why each row was skipped</div>
+        </div>
+        <div class="card" style="padding:20px">
+          <div style="font-weight:700;color:var(--navy);margin-bottom:10px;font-size:14.5px">By List</div>
+          <div id="dashboard-listtypes" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+        <div class="card" style="padding:20px">
+          <div style="font-weight:700;color:var(--navy);margin-bottom:10px;font-size:14.5px">Campaigns</div>
+          <div id="dashboard-campaigns" style="display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contacts -->
+    <div class="view" id="view-contacts">
+      <div class="section-head">
+        <div><h2>Contacts</h2><div class="section-subtitle" id="contacts-subtitle">Manage your outreach list.</div></div>
+      </div>
+      <div class="filter-bar">
+        <input type="text" placeholder="Search name, email, company…" id="search-input" oninput="filterContacts()">
+        <select id="status-filter" onchange="filterContacts()">
+          <option value="">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="enriched">Enriched</option>
+          <option value="draft_ready">Draft Ready</option>
+          <option value="sent">Sent</option>
+          <option value="followed_up">Followed Up</option>
+          <option value="replied">Replied</option>
+          <option value="error">Error</option>
+        </select>
+        <select id="campaign-filter" onchange="filterContacts()">
+          <option value="">All campaigns</option>
+        </select>
+        <select id="list-type-filter" onchange="filterContacts()">
+          <option value="">All lists</option>
+          <option value="prospect">Prospects</option>
+          <option value="lead">Leads</option>
+          <option value="client">Clients</option>
+          <option value="not_interested">Not Interested</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="loadContacts()">↻ Refresh</button>
+        <button class="btn btn-ghost btn-sm" onclick="openContactModalNew()">+ Add Contact</button>
+        <button class="btn btn-ghost btn-sm" onclick="downloadContacts()">⬇ Download CSV</button>
+        <button class="btn btn-navy btn-sm" onclick="runBulkPipeline()">▶ Run Pipeline on Pending</button>
+      </div>
+      <div class="bulk-bar" id="bulk-bar">
+        <strong id="selected-count">0 selected</strong>
+        <select id="bulk-campaign-select"><option value="">Add to campaign…</option></select>
+        <button class="btn btn-primary btn-sm" onclick="bulkSetCampaign()">Apply Campaign</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkRemoveCampaign()" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.3)">Remove from Campaign</button>
+        <button class="btn btn-ghost btn-sm" onclick="runPipelineOnSelected()" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.3)">▶ Run Pipeline on Selected</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkSendEmails()" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.3)">✉ Send Bulk Emails</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkHold(true)" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.3)">⏸ Put on Hold</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkHold(false)" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.3)">▶ Release Hold</button>
+        <button class="btn btn-danger btn-sm" onclick="bulkDelete()">Delete Selected</button>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th style="width:38px"><input type="checkbox" id="select-all" onchange="toggleSelectAll(this)"></th><th>Name</th><th>Email</th><th>Company</th><th>List</th><th>Status</th><th>Next Step</th><th>Actions</th></tr></thead>
+          <tbody id="contacts-table"><tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted)">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Campaigns -->
+    <div class="view" id="view-campaigns">
+      <div class="section-head">
+        <div><h2>Campaigns</h2><div class="section-subtitle">Design your outreach sequence — drag steps to build the flow.</div></div>
+        <button class="btn btn-primary btn-sm" onclick="openCampaignModal()">+ New Campaign</button>
+      </div>
+      <div id="campaigns-grid" class="campaigns-grid"></div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- Toast -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<!-- Upload Modal -->
+<div class="modal-overlay" id="upload-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Upload Contacts</div><button class="modal-close" onclick="closeModal('upload-modal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Campaign (optional)</label><select id="upload-campaign-id"><option value="">No campaign</option></select></div>
+      <div class="form-group" id="upload-listtype-group" style="display:none">
+        <label>List Type (admin only)</label>
+        <select id="upload-list-type">
+          <option value="prospect">Prospect (standard outreach pipeline)</option>
+          <option value="lead">Lead</option>
+          <option value="client">Client</option>
+          <option value="not_interested">Not Interested</option>
+        </select>
+      </div>
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondragover="event.preventDefault();this.classList.add('dragging')" ondragleave="this.classList.remove('dragging')" ondrop="handleDrop(event)">
+        <div class="upload-icon">📤</div>
+        <strong style="color:var(--navy)">Click to choose file or drag & drop</strong>
+        <p style="color:var(--muted);font-size:12px;margin-top:8px">CSV or Excel (.xlsx) · Required column: <code>email</code></p>
+        <p style="color:var(--muted);font-size:11px;margin-top:4px">Optional: name, linkedin_url, company, job_title</p>
+      </div>
+      <input type="file" id="file-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleFileSelect(event)">
+      <div id="upload-preview" style="margin-top:12px;display:none"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('upload-modal')">Cancel</button>
+      <button class="btn btn-primary" id="upload-btn" onclick="submitUpload()" disabled>Upload Contacts</button>
+    </div>
+  </div>
+</div>
+
+<!-- Campaign Modal -->
+<div class="modal-overlay" id="campaign-modal">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-header"><div class="modal-title" id="campaign-modal-title">New Campaign</div><button class="modal-close" onclick="closeModal('campaign-modal')">×</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="campaign-id-field">
+      <div class="form-group"><label>Campaign Name *</label><input type="text" id="camp-name" placeholder="e.g. SaaS Founders Q3 Outreach"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label>Your Name *</label><input type="text" id="camp-your-name" placeholder="John Smith"></div>
+        <div class="form-group"><label>Your Company *</label><input type="text" id="camp-your-company" placeholder="Acme Inc"></div>
+      </div>
+      <div class="form-group"><label>Your Role</label><input type="text" id="camp-your-role" placeholder="Head of Sales"></div>
+      <div class="form-group"><label>Value Proposition / Offer *</label><textarea id="camp-value-prop" rows="3" placeholder="We help B2B SaaS companies automate their outbound sales using AI..."></textarea></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label>Follow-up Days (for follow-up email steps)</label><input type="text" id="camp-followup-days" value="3,7,14"></div>
+        <div class="form-group"><label>Max Follow-ups</label><input type="number" id="camp-max-followups" value="3" min="1" max="8"></div>
+      </div>
+
+      <label style="margin-top:6px">Outreach Pipeline — drag to build your sequence (like Apollo)</label>
+      <div class="builder-wrap">
+        <div>
+          <div class="builder-col-title">Available steps</div>
+          <div id="palette-list"></div>
+        </div>
+        <div>
+          <div class="builder-col-title">Your sequence (drag to reorder)</div>
+          <div class="sequence-list" id="sequence-list" ondragover="event.preventDefault()" ondrop="onSequenceDrop(event)"></div>
+          <div class="drop-hint">Drag steps here to add them to the pipeline · drag within the list to reorder</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('campaign-modal')">Cancel</button>
+      <button class="btn btn-danger" id="campaign-delete-btn" onclick="deleteCampaign()" style="display:none">Delete Campaign</button>
+      <button class="btn btn-primary" onclick="saveCampaign()">Save Campaign</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Contact Modal -->
+<div class="modal-overlay" id="add-contact-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add Contact</div><button class="modal-close" onclick="closeModal('add-contact-modal')">×</button></div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label>Name *</label><input id="new-name" placeholder="Prospect name"></div>
+        <div class="form-group"><label>Email *</label><input id="new-email" placeholder="name@company.com"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label>Company</label><input id="new-company" placeholder="Company"></div>
+        <div class="form-group"><label>Job Title</label><input id="new-job-title" placeholder="Director, Data & AI"></div>
+      </div>
+      <div class="form-group"><label>LinkedIn URL</label><input id="new-linkedin" placeholder="https://www.linkedin.com/in/..."></div>
+      <div class="form-group"><label>Campaign</label><select id="new-campaign"><option value="">No campaign</option></select></div>
+      <div class="form-group" id="new-listtype-group" style="display:none">
+        <label>List Type (admin only)</label>
+        <select id="new-list-type">
+          <option value="prospect">Prospect (standard outreach pipeline)</option>
+          <option value="lead">Lead</option>
+          <option value="client">Client</option>
+          <option value="not_interested">Not Interested</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Manual About / Context for AI drafting</label><textarea id="new-manual-about" rows="4" placeholder="Paste About section, recent initiatives, responsibilities, or notes."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('add-contact-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNewContact()">Save Contact</button>
+    </div>
+  </div>
+</div>
+
+<!-- Auth Modal -->
+<div class="modal-overlay" id="auth-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header"><div class="modal-title" id="auth-modal-title">Sign in</div><button class="modal-close" onclick="closeModal('auth-modal')">×</button></div>
+    <div class="modal-body">
+      <div id="auth-logged-in" style="display:none">
+        <p style="color:var(--muted);font-size:13px;margin-bottom:14px">Signed in as <strong id="auth-current-email"></strong>. Campaigns you create are tagged with your name so your team knows who owns what.</p>
+        <button class="btn btn-danger" onclick="logout()">Log out</button>
+      </div>
+      <div id="auth-form-wrap">
+        <div class="tabs" style="margin-bottom:14px">
+          <button class="tab active" id="tab-login" onclick="setAuthMode('login')">Log in</button>
+          <button class="tab" id="tab-register" onclick="setAuthMode('register')">Create account</button>
+        </div>
+        <div class="form-group" id="auth-name-group" style="display:none"><label>Name</label><input id="auth-name" placeholder="Your name"></div>
+        <div class="form-group"><label>Email</label><input id="auth-email" placeholder="you@company.com"></div>
+        <div class="form-group"><label>Password</label><input id="auth-password" type="password" placeholder="••••••••"></div>
+        <p style="color:var(--muted);font-size:11.5px">Accounts are optional — SalesFlow works fully without signing in. Signing in just tags campaigns you create with your name for team visibility.</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('auth-modal')">Cancel</button>
+      <button class="btn btn-primary" id="auth-submit-btn" onclick="submitAuth()">Log in</button>
+    </div>
+  </div>
+</div>
+
+<!-- Skipped Imports Modal -->
+<div class="modal-overlay" id="skipped-modal">
+  <div class="modal" style="max-width:1180px;width:95vw">
+    <div class="modal-header"><div class="modal-title">Skipped Imports</div><button class="modal-close" onclick="closeModal('skipped-modal')">×</button></div>
+    <div class="modal-body">
+      <p style="color:var(--muted);font-size:12.5px;margin-bottom:12px">Every row that didn't get imported, and why — nothing disappears silently.</p>
+      <div id="skipped-user-counts" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"></div>
+      <div class="bulk-bar" id="skipped-bulk-bar">
+        <strong id="skipped-selected-count">0 selected</strong>
+        <select id="skipped-add-campaign"><option value="">Add to campaign (optional)…</option></select>
+        <button class="btn btn-primary btn-sm" onclick="bulkAddSkippedToContacts()">+ Add to Contacts</button>
+        <button class="btn btn-danger btn-sm" onclick="bulkDeleteSkipped()">Delete Selected</button>
+      </div>
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:34px"><input type="checkbox" id="skipped-select-all" onchange="toggleSelectAllSkipped(this)"></th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>User</th>
+              <th>List</th>
+              <th>Date &amp; Time</th>
+              <th>Reason</th>
+              <th></th>
+            </tr>
+            <tr>
+              <th></th>
+              <th><input type="text" id="skipped-filter-name" placeholder="Filter…" oninput="filterSkippedList()" style="font-size:11.5px;padding:5px 8px"></th>
+              <th><input type="text" id="skipped-filter-email" placeholder="Filter…" oninput="filterSkippedList()" style="font-size:11.5px;padding:5px 8px"></th>
+              <th><select id="skipped-filter-user" onchange="filterSkippedList()" style="font-size:11.5px;padding:5px 6px"><option value="">All</option></select></th>
+              <th><input type="text" id="skipped-filter-list" placeholder="Filter…" oninput="filterSkippedList()" style="font-size:11.5px;padding:5px 8px"></th>
+              <th><input type="text" id="skipped-filter-date" placeholder="e.g. 2026-07" oninput="filterSkippedList()" style="font-size:11.5px;padding:5px 8px"></th>
+              <th><input type="text" id="skipped-filter-reason" placeholder="Filter…" oninput="filterSkippedList()" style="font-size:11.5px;padding:5px 8px"></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="skipped-table"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('skipped-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Panel Modal -->
+<div class="admin-app" id="admin-app">
+  <div class="admin-sidebar">
+    <div class="admin-logo">
+      <div class="admin-logo-icon">A</div>
+      <div>
+        <div class="admin-logo-text">Admin<span>Console</span></div>
+        <div class="admin-logo-sub">SalesFlow Control Center</div>
+      </div>
+    </div>
+    <nav class="admin-nav">
+      <button class="admin-nav-item active" id="admin-tab-users" onclick="switchAdminTab('users')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Users
+      </button>
+      <button class="admin-nav-item" id="admin-tab-dashboards" onclick="switchAdminTab('dashboards')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        User Dashboards
+      </button>
+      <button class="admin-nav-item" id="admin-tab-activity" onclick="switchAdminTab('activity')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Activity Monitor
+      </button>
+    </nav>
+    <div class="admin-exit-wrap">
+      <button class="btn admin-exit-btn" onclick="exitAdminApp()">← Exit to SalesFlow</button>
+    </div>
+  </div>
+  <div class="admin-main">
+    <div class="admin-topbar">
+      <div class="admin-topbar-title" id="admin-page-title">Users</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.5)">You are in the <strong style="color:#fff">Admin Console</strong> — a separate control center for the whole platform.</div>
+    </div>
+    <div class="admin-content">
+      <div id="admin-users-panel">
+        <p style="color:var(--admin-muted);font-size:12.5px;margin-bottom:14px">Each user only sees their own contacts and campaigns. As an admin, you see everything. Use this panel to promote/demote admins, restrict accounts, or remove users.</p>
+        <div id="admin-users-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+      <div id="admin-dashboards-panel" style="display:none">
+        <div id="admin-dashboards-overview">
+          <p style="color:var(--admin-muted);font-size:12.5px;margin-bottom:14px">Click any user to see their full activity dashboard — campaigns, contacts, and recent actions.</p>
+          <div class="admin-stats-grid" id="admin-users-cards"></div>
+        </div>
+        <div id="admin-user-detail" style="display:none">
+          <button class="btn admin-btn-ghost btn-sm" style="margin-bottom:14px" onclick="backToUsersOverview()">← Back to all users</button>
+          <div id="admin-user-detail-content"></div>
+        </div>
+      </div>
+      <div id="admin-activity-panel" style="display:none">
+        <p style="color:var(--admin-muted);font-size:12.5px;margin-bottom:14px">Everything every user has done, most recent first — logins, campaigns created, contacts added/uploaded, and every pipeline action.</p>
+        <div id="admin-activity-counts" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
+        <div id="admin-activity-list" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Contact Detail Modal -->
+<div class="modal-overlay" id="contact-modal">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-header">
+      <div><div class="modal-title" id="cmod-name">Contact</div><div style="font-size:12px;color:var(--muted);margin-top:2px" id="cmod-email"></div></div>
+      <button class="modal-close" onclick="closeModal('contact-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('overview')">Overview</button>
+        <button class="tab" onclick="switchTab('pipeline')">Pipeline</button>
+        <button class="tab" onclick="switchTab('activity')">Activity Log</button>
+      </div>
+
+      <div id="tab-overview">
+        <div class="detail-grid" id="contact-detail-grid"></div>
+        <div class="linkedin-box" id="linkedin-info-box">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;font-weight:700;margin-bottom:8px">Profile / Enrichment Data</div>
+          <div id="linkedin-info" style="color:var(--muted);font-size:13px;font-style:italic">No enrichment data yet.</div>
+        </div>
+        <div class="linkedin-box" id="manual-enrich-box">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;font-weight:700;margin-bottom:8px">Editable AI Context</div>
+          <div class="form-group"><label>Headline / Role Context</label><input id="manual-headline" placeholder="Example: Director, Data & Analytics leading self-service BI"></div>
+          <div class="form-group"><label>About / Manual Notes</label><textarea id="manual-summary" rows="4" placeholder="Paste LinkedIn About section or your manual notes."></textarea></div>
+          <div class="form-group"><label>Experience / Current Initiatives</label><textarea id="manual-experience" rows="3" placeholder="Paste experience, responsibilities, initiatives."></textarea></div>
+          <div class="form-group"><label>Skills / Keywords</label><input id="manual-skills" placeholder="AI, DataOps, Cloud, GenAI..."></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" onclick="saveManualEnrichment(false)">Save AI Context</button>
+            <button class="btn btn-navy btn-sm" onclick="saveManualEnrichment(true)">Save + Generate Draft</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-pipeline" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <div style="font-size:12.5px;color:var(--muted)">Steps run in the order your campaign defines. Generate content, review it, then send / mark done.</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary btn-sm" id="smart-step-btn" onclick="runSmartStepForCurrent()">⚡ Auto: do next step</button>
+            <button class="btn btn-ghost btn-sm" onclick="downloadCurrentContact()">⬇ Download all content</button>
+          </div>
+        </div>
+        <div class="stepper" id="pipeline-stepper"></div>
+      </div>
+
+      <div id="tab-activity" style="display:none">
+        <div id="activity-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    </div>
+    <div class="modal-footer" id="contact-modal-actions"></div>
+  </div>
+</div>
+
+<script>
+const API = (window.location.protocol === 'file:' ? 'http://localhost:8000' : window.location.origin) + '/api';
+
+let contacts = [], campaigns = [], currentContact = null, currentPipeline = null;
+let selectedContacts = new Set();
+let stepCatalogue = [];
+let sequenceSteps = [];
+let authMode = 'login';
+let authUser = null;
+let token = localStorage.getItem('sf_token') || null;
+
+// ── API helper ──────────────────────────────────────────────
+async function api(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  try {
+    const r = await fetch(API + path, { ...opts, headers });
+    if (!r.ok) {
+      const e = await r.json().catch(() => ({}));
+      throw new Error(e.detail || e.message || r.statusText || ('HTTP ' + r.status));
+    }
+    return r.json();
+  } catch (e) {
+    toast('Error: ' + e.message, 'error');
+    throw e;
+  }
+}
+
+// ── Toast ────────────────────────────────────────────────────
+function toast(msg, type = 'info') {
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  el.innerHTML = `<span>${icons[type] || 'ℹ️'}</span><span>${esc(msg)}</span>`;
+  wrap.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(20px)'; setTimeout(() => el.remove(), 200); }, 4000);
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function badge(status) { return `<span class="badge badge-${status}">${(status||'').replace(/_/g, ' ')}</span>`; }
+function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+// ── Count-up animation for stat numbers ─────────────────────
+function countUp(el, target) {
+  target = Number(target) || 0;
+  const start = Number(el.dataset.prev || 0);
+  const dur = 550;
+  const t0 = performance.now();
+  function tick(now) {
+    const p = Math.min(1, (now - t0) / dur);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(start + (target - start) * eased);
+    if (p < 1) requestAnimationFrame(tick); else el.dataset.prev = target;
+  }
+  requestAnimationFrame(tick);
+}
+
+// ── Magnetic hover buttons (tasteful cursor motion) ─────────
+function initMagnetic() {
+  document.querySelectorAll('.magnetic').forEach(btn => {
+    if (btn._magneticBound) return;
+    btn._magneticBound = true;
+    btn.addEventListener('mousemove', e => {
+      const r = btn.getBoundingClientRect();
+      const x = (e.clientX - r.left - r.width / 2) * 0.18;
+      const y = (e.clientY - r.top - r.height / 2) * 0.35;
+      btn.style.transform = `translate(${x}px, ${y}px)`;
+    });
+    btn.addEventListener('mouseleave', () => { btn.style.transform = ''; });
+  });
+}
+
+// ── Navigation ──────────────────────────────────────────────
+async function showView(view, el) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  if (el) el.classList.add('active');
+  else document.querySelector(`.nav-item[onclick*="showView('${view}"]`)?.classList.add('active');
+  document.getElementById('page-title').textContent = { dashboard: 'Dashboard', contacts: 'Contacts', campaigns: 'Campaigns' }[view] || view;
+  if (view === 'dashboard') await loadDashboard();
+  if (view === 'contacts') await loadContacts();
+  if (view === 'campaigns') await loadCampaigns();
+}
+
+// ── Dashboard ─────────────────────────────────────────────────
+async function loadDashboard() {
+  const stats = await api('/contacts/stats').catch(() => ({}));
+  ['total', 'pending', 'sent', 'draft_ready', 'replied', 'error'].forEach(k => {
+    const el = document.getElementById('stat-' + k);
+    if (el) countUp(el, stats[k] || 0);
+  });
+
+  const notif = await api('/contacts/dashboard/notifications').catch(() => ({ items: [] }));
+  const grid = document.getElementById('pending-actions-grid');
+  grid.innerHTML = notif.items.map(i => `
+    <div class="pending-step-card ${i.count === 0 ? 'zero' : ''}" onclick="goContactsByStep('${i.step}')">
+      <div class="psc-count">${i.count}</div>
+      <div class="psc-label">Pending: ${esc(i.label)}</div>
+    </div>`).join('') || '<div style="color:var(--muted);font-size:13px">No pending action items — every contact is caught up 🎉</div>';
+
+  const dups = await api('/contacts/duplicates').catch(() => ({ total_contacts_in_duplicates: 0 }));
+  countUp(document.getElementById('dup-count'), dups.total_contacts_in_duplicates || 0);
+  window._duplicateIds = dups.ids || [];
+
+  const skipped = await api('/contacts/skipped').catch(() => []);
+  countUp(document.getElementById('skipped-count'), skipped.length || 0);
+  window._skippedList = skipped;
+
+  const byType = (stats.by_list_type) || {};
+  const typeLabels = { prospect: 'Prospects', lead: 'Leads', client: 'Clients', not_interested: 'Not Interested' };
+  const dlt = document.getElementById('dashboard-listtypes');
+  dlt.innerHTML = Object.entries(typeLabels).map(([key, label]) => `
+    <div class="list-type-row" style="cursor:pointer" onclick="goContactsFilter({listType:'${key}'})">
+      <span>${esc(label)}</span><strong>${byType[key] || 0}</strong>
+    </div>`).join('') + (stats.on_hold ? `<div class="list-type-row" style="cursor:pointer;margin-top:2px" onclick="goDuplicates()"><span>On hold</span><strong>${stats.on_hold}</strong></div>` : '');
+
+  if (!campaigns.length) campaigns = await api('/campaigns/').catch(() => []);
+  const dc = document.getElementById('dashboard-campaigns');
+  if (!campaigns.length) {
+    dc.innerHTML = '<div style="color:var(--muted);font-size:13px">No campaigns yet. <a href="#" onclick="openCampaignModal();return false;" style="color:var(--orange)">Create one</a>.</div>';
+  } else {
+    dc.innerHTML = campaigns.slice(0, 6).map(c => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;background:var(--bg)">
+        <div>
+          <div style="font-size:12.5px;font-weight:700;color:var(--navy)">${esc(c.name)}</div>
+          <div style="font-size:11px;color:var(--muted)">${c.pipeline_steps.length} steps${c.owner_name?' · by '+esc(c.owner_name):''}</div>
+        </div>
+        <span class="badge badge-sent">${c.contact_count||0}</span>
+      </div>`).join('');
+  }
+  initMagnetic();
+}
+
+function goContacts(status) { goContactsFilter({ status }); }
+function goContactsByStep(step) { goContactsFilter({ step }); }
+function goDuplicates() { goContactsFilter({ duplicates: true }); }
+
+async function goContactsFilter({ status, step, listType, duplicates }) {
+  await showView('contacts');
+  document.getElementById('status-filter').value = status || '';
+  document.getElementById('list-type-filter').value = listType || '';
+  window._stepFilter = step || null;
+  window._duplicateFilterOn = !!duplicates;
+  let subtitle = 'Manage your outreach list.';
+  if (step) subtitle = `Showing contacts whose next action is: ${(stepCatalogue.find(s=>s.key===step)||{}).label || step}`;
+  if (listType) subtitle = `Showing: ${listType.replace('_',' ')}`;
+  if (duplicates) subtitle = `Showing ${(window._duplicateIds||[]).length} possible duplicate contacts — hold or delete the ones you don't need.`;
+  document.getElementById('contacts-subtitle').textContent = subtitle;
+  filterContacts();
+}
+
+// ── Contacts ──────────────────────────────────────────────────
+async function loadContacts() {
+  const [list, camps, nextSteps] = await Promise.all([
+    api('/contacts/?limit=1000').catch(() => []),
+    campaigns.length ? Promise.resolve(campaigns) : api('/campaigns/').catch(() => []),
+    api('/contacts/next-steps').catch(() => ({})),
+  ]);
+  contacts = list.map(c => ({ ...c, _next: nextSteps[String(c.id)] || null }));
+  campaigns = camps;
+  populateCampaignFilters();
+  const badge = document.getElementById('nav-contacts-badge');
+  const activeCount = contacts.filter(c => c.status !== 'replied').length;
+  if (activeCount) { badge.style.display = 'inline-block'; badge.textContent = activeCount; } else { badge.style.display = 'none'; }
+  filterContacts();
+}
+
+function populateCampaignFilters() {
+  const opts = '<option value="">All campaigns</option>' + campaigns.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  const cf = document.getElementById('campaign-filter');
+  if (cf && cf.options.length <= 1) cf.innerHTML = opts;
+  const bulkSel = document.getElementById('bulk-campaign-select');
+  if (bulkSel && bulkSel.options.length <= 1) bulkSel.innerHTML = '<option value="">Add to campaign…</option>' + campaigns.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+}
+
+function renderContactsTable(list) {
+  const tb = document.getElementById('contacts-table');
+  if (!list.length) {
+    tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted)">No contacts found.</td></tr>';
+    updateBulkBar();
+    return;
+  }
+  const typeLabels = { prospect: 'Prospect', lead: 'Lead', client: 'Client', not_interested: 'Not Interested' };
+  tb.innerHTML = list.map(c => {
+    const isStuck = ['enriching', 'drafting'].includes(c.status);
+    const nextLabel = c.on_hold ? 'On hold — no actions' : (c._next ? c._next.label : '—');
+    return `<tr>
+    <td><input type="checkbox" class="row-check" data-id="${c.id}" ${selectedContacts.has(c.id)?'checked':''} onchange="toggleContactSelect(${c.id}, this.checked)"></td>
+    <td><strong>${esc(c.name)}</strong></td>
+    <td style="font-size:12px;color:var(--muted)">${esc(c.email)}</td>
+    <td style="color:var(--muted)">${esc(c.company||'—')}</td>
+    <td>${c.on_hold ? '<span class="badge badge-hold">On Hold</span>' : `<span class="badge badge-${c.list_type||'prospect'}">${esc(typeLabels[c.list_type]||'Prospect')}</span>`}</td>
+    <td>${badge(c.status)}</td>
+    <td style="font-size:12px;color:var(--muted)">${esc(nextLabel)}</td>
+    <td><div class="action-row">
+      <button class="btn btn-ghost btn-xs" onclick="openContactDetail(${c.id})">Detail</button>
+      ${c.status==='draft_ready' && !c.on_hold?`<button class="btn btn-success btn-xs" onclick="quickApprove(${c.id})">Send</button>`:''}
+      ${isStuck?`<button class="btn btn-danger btn-xs" onclick="resetDrafting(${c.id})">Reset stuck</button>`:''}
+      <button class="btn btn-danger btn-xs" onclick="deleteContact(${c.id})">Delete</button>
+    </div></td>
+  </tr>`;
+  }).join('');
+  updateBulkBar();
+}
+
+function filterContacts() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const s = document.getElementById('status-filter').value;
+  const camp = document.getElementById('campaign-filter').value;
+  const listType = document.getElementById('list-type-filter').value;
+  const stepFilter = window._stepFilter;
+  const dupOn = window._duplicateFilterOn;
+  const dupIds = new Set(window._duplicateIds || []);
+  renderContactsTable(contacts.filter(c =>
+    (!q || c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || (c.company||'').toLowerCase().includes(q)) &&
+    (!s || c.status === s) &&
+    (!camp || String(c.campaign_id) === camp) &&
+    (!listType || c.list_type === listType) &&
+    (!stepFilter || (c._next && c._next.step === stepFilter)) &&
+    (!dupOn || dupIds.has(c.id))
+  ));
+}
+
+function toggleContactSelect(id, checked) { checked ? selectedContacts.add(id) : selectedContacts.delete(id); updateBulkBar(); }
+function toggleSelectAll(cb) {
+  document.querySelectorAll('.row-check').forEach(x => {
+    x.checked = cb.checked;
+    const id = parseInt(x.dataset.id);
+    cb.checked ? selectedContacts.add(id) : selectedContacts.delete(id);
+  });
+  updateBulkBar();
+}
+function updateBulkBar() {
+  const bar = document.getElementById('bulk-bar');
+  const count = document.getElementById('selected-count');
+  if (!bar || !count) return;
+  count.textContent = `${selectedContacts.size} selected`;
+  bar.classList.toggle('active', selectedContacts.size > 0);
+}
+
+async function bulkSetCampaign() {
+  const val = document.getElementById('bulk-campaign-select').value;
+  if (!val) { toast('Choose a campaign first', 'info'); return; }
+  await api('/contacts/bulk/campaign', { method: 'POST', body: JSON.stringify({ ids: [...selectedContacts], campaign_id: parseInt(val) }) });
+  toast('Campaign updated for selected contacts', 'success');
+  selectedContacts.clear();
+  await loadContacts(); await loadDashboard();
+}
+async function bulkRemoveCampaign() {
+  await api('/contacts/bulk/campaign', { method: 'POST', body: JSON.stringify({ ids: [...selectedContacts], campaign_id: null }) });
+  toast('Removed selected contacts from their campaign', 'success');
+  selectedContacts.clear();
+  await loadContacts(); await loadDashboard();
+}
+async function bulkDelete() {
+  if (!confirm(`Delete ${selectedContacts.size} selected contacts?`)) return;
+  await api('/contacts/bulk/delete', { method: 'POST', body: JSON.stringify({ ids: [...selectedContacts] }) });
+  toast('Selected contacts deleted', 'info');
+  selectedContacts.clear();
+  await loadContacts(); await loadDashboard();
+}
+async function bulkHold(hold) {
+  if (!selectedContacts.size) { toast('Select contacts first', 'info'); return; }
+  await api('/contacts/bulk/hold', { method: 'POST', body: JSON.stringify({ ids: [...selectedContacts], hold }) });
+  toast(hold ? 'Selected contacts put on hold — no pipeline actions will run on them' : 'Hold released for selected contacts', 'success');
+  selectedContacts.clear();
+  await loadContacts(); await loadDashboard();
+}
+async function bulkSendEmails() {
+  if (!selectedContacts.size) { toast('Select contacts first', 'info'); return; }
+  const job = await api('/contacts/bulk/send-emails', { method: 'POST', body: JSON.stringify({ ids: [...selectedContacts] }) }).catch(() => null);
+  if (!job) return;
+  toast(`Sending ${job.total} emails…`, 'info');
+  await trackBatchJob(job.job_id, job.total, 'Sending emails');
+  selectedContacts.clear();
+  await loadContacts(); await loadDashboard();
+}
+async function runPipelineOnSelected() {
+  if (!selectedContacts.size) { toast('Select contacts first', 'info'); return; }
+  const job = await api('/contacts/bulk/run-pipeline', { method: 'POST', body: JSON.stringify({ ids: [...selectedContacts] }) }).catch(() => null);
+  if (!job) return;
+  await trackBatchJob(job.job_id, job.total, 'Running pipeline');
+  selectedContacts.clear();
+  await loadContacts(); await loadDashboard();
+}
+
+// ── Batch job progress: shows "1/100, 2/100 ... completed" ─────
+async function trackBatchJob(jobId, total, label = 'Working') {
+  const strip = document.getElementById('pipeline-progress');
+  const txt = document.getElementById('pipeline-progress-text');
+  const bar = document.getElementById('pipeline-progress-bar');
+  const btn = document.getElementById('bulk-pipeline-btn');
+  strip.classList.add('active');
+  btn.disabled = true;
+  document.getElementById('loading-banner').classList.add('active');
+  document.getElementById('lb-sub').textContent = "This may take some time — please don't reload. Feel free to switch tabs while it runs.";
+  for (let i = 0; i < 600; i++) {
+    const job = await api(`/contacts/pipeline/jobs/${jobId}`).catch(() => null);
+    if (!job) break;
+    const pct = job.total ? Math.round((job.completed / job.total) * 100) : 0;
+    txt.textContent = `${job.completed}/${job.total} completed`;
+    btn.textContent = `▶ ${job.completed}/${job.total}`;
+    bar.style.width = pct + '%';
+    document.getElementById('lb-text').textContent = `${label}: ${job.completed}/${job.total} completed${job.current ? ' — currently on ' + esc(job.current) : ''}`;
+    if (job.status === 'completed' || job.status === 'error') {
+      toast(`${label}: ${job.completed}/${job.total} done`, job.status === 'completed' ? 'success' : 'error');
+      break;
+    }
+    await new Promise(r => setTimeout(r, 900));
+    loadContacts();
+  }
+  btn.disabled = false;
+  btn.textContent = '▶ Run Pipeline';
+  document.getElementById('lb-sub').textContent = "This may take a moment — please don't reload. You can switch tabs while you wait.";
+  hideLoading();
+  setTimeout(() => strip.classList.remove('active'), 1500);
+}
+
+async function runBulkPipeline() {
+  const before = await api('/contacts/stats').catch(() => ({}));
+  const total = Object.entries(before).reduce((s, [k, v]) => (k !== 'total' && k !== 'replied') ? s : s, 0);
+  const job = await api('/contacts/bulk/run-pipeline', { method: 'POST', body: JSON.stringify({ ids: [] }) }).catch(() => null);
+  if (!job) return;
+  toast(`Pipeline started for ${job.total} contacts`, 'info');
+  await trackBatchJob(job.job_id, job.total, 'Pipeline');
+  await loadDashboard(); await loadContacts();
+}
+
+async function resetDrafting(id) {
+  await api(`/contacts/${id}/reset-drafting`, { method: 'POST' });
+  toast('Contact reset — you can enrich/draft it again now.', 'success');
+  await loadContacts(); await loadDashboard();
+}
+async function markReplied(id) {
+  await api(`/contacts/${id}/mark-replied`, { method: 'POST' });
+  toast('Marked as replied — removed from sequence', 'success');
+  closeModal('contact-modal');
+  loadContacts(); loadDashboard();
+}
+async function quickApprove(id) {
+  await api(`/contacts/${id}/approve-and-send`, { method: 'POST' });
+  toast('Sending email…', 'success');
+  setTimeout(() => { loadDashboard(); loadContacts(); }, 1200);
+}
+async function deleteContact(id) {
+  if (!confirm('Delete this contact?')) return;
+  await api(`/contacts/${id}`, { method: 'DELETE' });
+  toast('Contact deleted', 'info');
+  loadContacts(); loadDashboard();
+}
+function downloadContacts() {
+  window.open(API + '/contacts/export.csv', '_blank');
+}
+function downloadCurrentContact() {
+  if (!currentContact) return;
+  window.open(API + `/contacts/${currentContact.id}/download`, '_blank');
+}
+
+// ── Contact Detail ────────────────────────────────────────────
+async function openContactDetail(id) {
+  currentContact = await api(`/contacts/${id}`).catch(() => null);
+  if (!currentContact) return;
+  if (!campaigns.length) campaigns = await api('/campaigns/').catch(() => []);
+  document.getElementById('cmod-name').textContent = currentContact.name;
+  document.getElementById('cmod-email').textContent = currentContact.email;
+  const grid = document.getElementById('contact-detail-grid');
+  grid.innerHTML = [
+    ['Company', currentContact.company || '—'],
+    ['Job Title', currentContact.job_title || '—'],
+    ['Status', currentContact.status],
+    ['Follow-ups sent', currentContact.followup_count],
+    ['Email sent at', currentContact.email_sent_at ? new Date(currentContact.email_sent_at).toLocaleString() : '—'],
+    ['Next follow-up', currentContact.next_followup_at ? new Date(currentContact.next_followup_at).toLocaleDateString() : '—'],
+  ].map(([l, v]) => `<div class="detail-item"><div class="detail-label">${l}</div><div class="detail-value">${esc(String(v))}</div></div>`).join('');
+  const campOptions = ['<option value="">No campaign</option>'].concat(campaigns.map(c => `<option value="${c.id}" ${currentContact.campaign_id===c.id?'selected':''}>${esc(c.name)}</option>`)).join('');
+  grid.innerHTML += `<div class="detail-item" style="grid-column:1/-1"><div class="detail-label">Campaign (add or remove)</div><div class="detail-value"><select id="contact-campaign-select" onchange="updateContactCampaign(${id})">${campOptions}</select></div></div>`;
+
+  const li = document.getElementById('linkedin-info');
+  if (currentContact.linkedin_headline || currentContact.linkedin_summary) {
+    li.style.fontStyle = 'normal'; li.style.color = 'var(--text)';
+    li.innerHTML = `<div class="linkedin-headline">${esc(currentContact.linkedin_headline||'')}</div>
+      <div class="linkedin-summary"><b>About:</b> ${esc((currentContact.linkedin_summary||'').slice(0,700))}</div>
+      <div class="linkedin-summary" style="margin-top:8px"><b>Experience:</b> ${esc((currentContact.linkedin_experience||'').slice(0,700))}</div>
+      <div class="linkedin-summary" style="margin-top:8px"><b>Skills:</b> ${esc((currentContact.linkedin_skills||'').slice(0,300))}</div>`;
+  } else {
+    li.style.fontStyle = 'italic'; li.style.color = 'var(--muted)';
+    li.textContent = 'No enrichment data yet — run the intro-email step, or fill in manual context below.';
+  }
+  document.getElementById('manual-headline').value = currentContact.linkedin_headline || '';
+  document.getElementById('manual-summary').value = currentContact.linkedin_summary || '';
+  document.getElementById('manual-experience').value = currentContact.linkedin_experience || '';
+  document.getElementById('manual-skills').value = currentContact.linkedin_skills || '';
+
+  const af = document.getElementById('contact-modal-actions');
+  const btns = [`<button class="btn btn-ghost btn-sm" onclick="closeModal('contact-modal')">Close</button>`];
+  const isStuck = ['enriching', 'drafting'].includes(currentContact.status);
+  if (isStuck) btns.push(`<button class="btn btn-danger btn-sm" onclick="resetDrafting(${id})">Reset stuck step</button>`);
+  if (['sent', 'followed_up'].includes(currentContact.status)) btns.push(`<button class="btn btn-success btn-sm" onclick="markReplied(${id})">✓ Mark Replied</button>`);
+  af.innerHTML = btns.join('');
+
+  switchTab('overview');
+  openModal('contact-modal');
+  loadActivities(id);
+  loadPipelineTab(id);
+}
+
+async function loadActivities(id) {
+  const acts = await api(`/contacts/${id}/activities`).catch(() => []);
+  const list = document.getElementById('activity-list');
+  if (!acts.length) { list.innerHTML = '<div style="color:var(--muted);font-size:13px">No activity yet.</div>'; return; }
+  list.innerHTML = acts.map(a => `
+    <div style="display:flex;gap:12px;align-items:flex-start;padding:10px;background:var(--bg);border-radius:8px;">
+      <div style="font-size:10px;color:var(--muted);white-space:nowrap;padding-top:2px;min-width:130px">${new Date(a.created_at).toLocaleString()}</div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--orange)">${esc(a.activity_type)}</div>
+        <div style="font-size:12px;color:var(--muted)">${esc(a.detail || '')}</div>
+      </div>
+    </div>`).join('');
+}
+
+function switchTab(tab) {
+  ['overview', 'pipeline', 'activity'].forEach((t, i) => {
+    document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+    document.querySelectorAll('#contact-modal .tab')[i].classList.toggle('active', t === tab);
+  });
+}
+
+// ── Pipeline tab (per-contact stepper) — items 2,10,11,14,15,16 ─────────
+async function loadPipelineTab(id) {
+  const data = await api(`/contacts/${id}/pipeline`).catch(() => null);
+  if (!data) return;
+  currentPipeline = data;
+  const stepper = document.getElementById('pipeline-stepper');
+  const nextStep = data.next_action.step;
+  const canEdit = !authUser || authUser.role === 'admin' || (currentContact && currentContact.owner_id === authUser.id) || (!currentContact.owner_id);
+  stepper.innerHTML = data.steps.map((s, i) => {
+    const isDone = s.status === 'done' || s.status === 'sent';
+    const isNext = s.step === nextStep;
+    const isEditing = window._editingStep === s.step;
+    let actionsHtml = '';
+    if (s.step === 'email') {
+      // Intro email uses the existing enrich/draft flow, which also covers "stuck" contacts (item 11)
+      if (!s.subject) {
+        actionsHtml = `<button class="btn btn-navy btn-xs" onclick="runEnrichAndDraft(${id})">Enrich + Draft</button>`;
+      } else if (isDone) {
+        actionsHtml = `<button class="btn btn-ghost btn-xs" onclick="runEnrichAndDraft(${id})">Redraft intro email</button>`;
+      } else {
+        actionsHtml = `<button class="btn btn-ghost btn-xs" onclick="runEnrichAndDraft(${id})">Redraft</button>
+                        <button class="btn btn-success btn-xs" onclick="quickApprove(${id})">✉ Approve & Send</button>`;
+      }
+    } else {
+      if (s.status === 'pending') {
+        actionsHtml = `<button class="btn btn-navy btn-xs" onclick="generateStep(${id},'${s.step}')">Generate ${esc(s.label)}</button>`;
+      } else {
+        const verb = s.kind === 'email' ? 'Send' : (s.step === 'linkedin_connect' ? 'Mark connected' : 'Mark done');
+        actionsHtml = `<button class="btn btn-ghost btn-xs" onclick="generateStep(${id},'${s.step}')">Regenerate</button>
+                        ${!isDone ? `<button class="btn btn-success btn-xs" onclick="completeStep(${id},'${s.step}', ${s.kind==='email'})">${verb}</button>` : ''}`;
+      }
+    }
+    // Item 4: edit option for the contact's owner (or admin) once content is drafted
+    if ((s.subject || s.body) && canEdit && !isEditing) {
+      actionsHtml += `<button class="btn btn-ghost btn-xs" onclick="startEditStep('${s.step}')">✎ Edit</button>`;
+    }
+    let bodyHtml = '';
+    if (isEditing) {
+      bodyHtml = `<div class="step-body">
+        <div class="form-group" style="margin-bottom:8px"><input id="edit-subject-${s.step}" value="${esc(s.subject||'')}" placeholder="Subject" ${s.step!=='email' && s.kind!=='email' ? 'style=\"display:none\"' : ''}></div>
+        <textarea id="edit-body-${s.step}" rows="6">${esc(s.body||'')}</textarea>
+        <div class="action-row" style="margin-top:8px">
+          <button class="btn btn-primary btn-xs" onclick="saveStepEdit(${id}, '${s.step}')">Save</button>
+          <button class="btn btn-ghost btn-xs" onclick="cancelEditStep()">Cancel</button>
+        </div>
+      </div>`;
+    } else if (s.subject || s.body) {
+      bodyHtml = `<div class="step-body"><div class="mail-preview">${s.subject?`<div class="mail-subject">Subject: ${esc(s.subject)}</div>`:''}<div class="mail-body">${esc(s.body||'')}</div></div></div>`;
+    }
+    return `<div class="step-card ${isDone?'is-done':''} ${isNext && !isDone?'is-next':''}">
+      <div class="step-card-head">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="step-num">${isDone ? '✓' : (i+1)}</div>
+          <div><div class="step-title">${esc(s.label)}</div><div class="step-kind">${s.kind}</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">${badge(s.status)}<div class="action-row">${actionsHtml}</div></div>
+      </div>
+      ${bodyHtml}
+    </div>`;
+  }).join('');
+  document.getElementById('smart-step-btn').textContent = data.next_action.step ? `⚡ Auto: ${data.next_action.label}` : '⚡ Pipeline complete';
+}
+
+function startEditStep(step) { window._editingStep = step; loadPipelineTab(currentContact.id); }
+function cancelEditStep() { window._editingStep = null; loadPipelineTab(currentContact.id); }
+async function saveStepEdit(id, step) {
+  const body = document.getElementById(`edit-body-${step}`).value;
+  const subjectEl = document.getElementById(`edit-subject-${step}`);
+  const subject = subjectEl ? subjectEl.value : null;
+  if (step === 'email') {
+    await api(`/contacts/${id}`, { method: 'PATCH', body: JSON.stringify({ email_subject: subject, email_body: body }) }).catch(() => null);
+  } else {
+    await api(`/contacts/${id}/pipeline/${step}`, { method: 'PATCH', body: JSON.stringify({ subject, body }) }).catch(() => null);
+  }
+  toast('Saved your edits', 'success');
+  window._editingStep = null;
+  currentContact = await api(`/contacts/${id}`).catch(() => currentContact);
+  await loadPipelineTab(id);
+}
+
+// ── Global loading banner (item 8) ─────────────────────────────
+function showLoading(text) {
+  document.getElementById('lb-text').textContent = text;
+  document.getElementById('loading-banner').classList.add('active');
+}
+function hideLoading() {
+  document.getElementById('loading-banner').classList.remove('active');
+}
+
+async function runEnrichAndDraft(id) {
+  showLoading('Enriching profile and drafting the intro email…');
+  await api(`/contacts/${id}/enrich`, { method: 'POST' });
+  toast('Enriching + drafting the intro email…', 'info');
+  await pollUntilIdle(id);
+}
+async function pollUntilIdle(id) {
+  for (let i = 0; i < 120; i++) {
+    const p = await api(`/contacts/${id}/progress`).catch(() => null);
+    if (p && (p.status === 'completed' || p.status === 'error')) {
+      toast(p.status === 'completed' ? 'Done' : `Failed: ${p.step}`, p.status === 'completed' ? 'success' : 'error');
+      break;
+    }
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  hideLoading();
+  currentContact = await api(`/contacts/${id}`).catch(() => currentContact);
+  await loadPipelineTab(id);
+  await loadContacts(); await loadDashboard();
+}
+async function generateStep(id, step) {
+  showLoading(`Generating ${stepLabel(step)}…`);
+  await api(`/contacts/${id}/pipeline/${step}/generate`, { method: 'POST' }).catch(() => null);
+  hideLoading();
+  toast('Generated', 'success');
+  await loadPipelineTab(id);
+  await loadContacts();
+}
+async function completeStep(id, step, send) {
+  showLoading(send ? 'Sending…' : 'Marking step complete…');
+  await api(`/contacts/${id}/pipeline/${step}/complete`, { method: 'POST', body: JSON.stringify({ send: !!send }) }).catch(() => null);
+  hideLoading();
+  toast('Step completed', 'success');
+  await loadPipelineTab(id);
+  await loadContacts(); await loadDashboard();
+}
+async function runSmartStepForCurrent() {
+  if (!currentContact) return;
+  showLoading('Figuring out the next step and generating it…');
+  await api(`/contacts/${currentContact.id}/pipeline/smart`, { method: 'POST' });
+  toast('Running the next step…', 'info');
+  setTimeout(async () => { hideLoading(); await loadPipelineTab(currentContact.id); await loadContacts(); await loadDashboard(); }, 2200);
+}
+
+async function updateContactCampaign(id) {
+  const val = document.getElementById('contact-campaign-select').value;
+  await api(`/contacts/${id}`, { method: 'PATCH', body: JSON.stringify({ campaign_id: val ? parseInt(val) : null }) });
+  toast(val ? 'Contact added to campaign' : 'Contact removed from campaign', 'success');
+  await loadContacts(); await loadCampaigns();
+}
+
+async function saveManualEnrichment(generateDraft = false) {
+  if (!currentContact) return;
+  const payload = {
+    linkedin_headline: document.getElementById('manual-headline').value.trim(),
+    linkedin_summary: document.getElementById('manual-summary').value.trim(),
+    linkedin_experience: document.getElementById('manual-experience').value.trim(),
+    linkedin_skills: document.getElementById('manual-skills').value.trim(),
+    status: 'enriched',
+  };
+  await api(`/contacts/${currentContact.id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  toast('AI context saved.', 'success');
+  if (generateDraft) { await runEnrichAndDraft(currentContact.id); }
+  else { await openContactDetail(currentContact.id); }
+}
+
+// ── Add contact ────────────────────────────────────────────────
+async function openContactModalNew() {
+  if (!campaigns.length) campaigns = await api('/campaigns/').catch(() => []);
+  ['new-name', 'new-email', 'new-company', 'new-job-title', 'new-linkedin', 'new-manual-about'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('new-campaign').innerHTML = '<option value="">No campaign</option>' + campaigns.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  document.getElementById('new-listtype-group').style.display = (authUser && authUser.role === 'admin') ? 'block' : 'none';
+  document.getElementById('new-list-type').value = 'prospect';
+  openModal('add-contact-modal');
+}
+async function saveNewContact() {
+  const payload = {
+    name: document.getElementById('new-name').value,
+    email: document.getElementById('new-email').value,
+    company: document.getElementById('new-company').value,
+    job_title: document.getElementById('new-job-title').value,
+    linkedin_url: document.getElementById('new-linkedin').value,
+    campaign_id: document.getElementById('new-campaign').value ? parseInt(document.getElementById('new-campaign').value) : null,
+    linkedin_summary: document.getElementById('new-manual-about').value.trim() || null,
+    list_type: (authUser && authUser.role === 'admin') ? document.getElementById('new-list-type').value : undefined,
+  };
+  if (!payload.name || !payload.email) { toast('Name and email are required', 'error'); return; }
+  await api('/contacts/', { method: 'POST', body: JSON.stringify(payload) });
+  toast('Contact added', 'success');
+  closeModal('add-contact-modal');
+  await loadContacts(); await loadDashboard();
+  await checkForNewDuplicates();
+}
+
+// ── Skipped Imports (item 4) ────────────────────────────────────
+let selectedSkipped = new Set();
+
+async function openSkippedModal() {
+  selectedSkipped.clear();
+  window._skippedRaw = await api('/contacts/skipped').catch(() => []);
+  if (!campaigns.length) campaigns = await api('/campaigns/').catch(() => []);
+  document.getElementById('skipped-add-campaign').innerHTML = '<option value="">Add to campaign (optional)…</option>' + campaigns.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+
+  const byUser = await api('/contacts/skipped/by-user').catch(() => ({ counts: {} }));
+  const userFilter = document.getElementById('skipped-filter-user');
+  userFilter.innerHTML = '<option value="">All</option>' + Object.keys(byUser.counts).map(name => `<option value="${esc(name)}">${esc(name)}</option>`).join('');
+  document.getElementById('skipped-user-counts').innerHTML = Object.entries(byUser.counts).map(([name, n]) =>
+    `<span class="badge badge-sent" style="cursor:pointer" onclick="document.getElementById('skipped-filter-user').value='${esc(name)}';filterSkippedList()">${esc(name)}: ${n}</span>`).join('');
+
+  ['skipped-filter-name','skipped-filter-email','skipped-filter-list','skipped-filter-date','skipped-filter-reason'].forEach(id => document.getElementById(id).value = '');
+  filterSkippedList();
+  openModal('skipped-modal');
+}
+
+function filterSkippedList() {
+  const fName = document.getElementById('skipped-filter-name').value.toLowerCase();
+  const fEmail = document.getElementById('skipped-filter-email').value.toLowerCase();
+  const fUser = document.getElementById('skipped-filter-user').value;
+  const fList = document.getElementById('skipped-filter-list').value.toLowerCase();
+  const fDate = document.getElementById('skipped-filter-date').value.toLowerCase();
+  const fReason = document.getElementById('skipped-filter-reason').value.toLowerCase();
+  const filtered = (window._skippedRaw || []).filter(s =>
+    (!fName || (s.name||'').toLowerCase().includes(fName)) &&
+    (!fEmail || (s.email||'').toLowerCase().includes(fEmail)) &&
+    (!fUser || s.owner_name === fUser) &&
+    (!fList || (s.list_name||'').toLowerCase().includes(fList)) &&
+    (!fDate || new Date(s.created_at).toLocaleString().toLowerCase().includes(fDate) || (s.created_at||'').toLowerCase().includes(fDate)) &&
+    (!fReason || (s.reason||'').toLowerCase().includes(fReason))
+  );
+  renderSkippedList(filtered);
+}
+
+function renderSkippedList(skipped) {
+  const tb = document.getElementById('skipped-table');
+  tb.innerHTML = skipped.map(s => `
+    <tr>
+      <td><input type="checkbox" class="skipped-row-check" data-id="${s.id}" ${selectedSkipped.has(s.id)?'checked':''} onchange="toggleSkippedSelect(${s.id}, this.checked)"></td>
+      <td><strong>${esc(s.name || '(no name)')}</strong></td>
+      <td style="font-size:12px;color:var(--muted)">${esc(s.email||'—')}</td>
+      <td><span class="badge badge-sent">${esc(s.owner_name)}</span></td>
+      <td style="color:var(--muted)">${esc(s.list_name||'—')}</td>
+      <td style="font-size:12px;color:var(--muted);white-space:nowrap">${new Date(s.created_at).toLocaleString()}</td>
+      <td style="font-size:12px;color:var(--red);max-width:220px">${esc(s.reason)}</td>
+      <td><button class="btn btn-ghost btn-xs" onclick="dismissSkipped(${s.id})">Dismiss</button></td>
+    </tr>`).join('') || `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted)">Nothing found — try clearing the filters.</td></tr>`;
+  updateSkippedBulkBar();
+}
+
+function toggleSkippedSelect(id, checked) { checked ? selectedSkipped.add(id) : selectedSkipped.delete(id); updateSkippedBulkBar(); }
+function toggleSelectAllSkipped(cb) {
+  document.querySelectorAll('.skipped-row-check').forEach(x => {
+    x.checked = cb.checked;
+    const id = parseInt(x.dataset.id);
+    cb.checked ? selectedSkipped.add(id) : selectedSkipped.delete(id);
+  });
+  updateSkippedBulkBar();
+}
+function updateSkippedBulkBar() {
+  document.getElementById('skipped-selected-count').textContent = `${selectedSkipped.size} selected`;
+  document.getElementById('skipped-bulk-bar').classList.toggle('active', selectedSkipped.size > 0);
+}
+async function bulkDeleteSkipped() {
+  if (!selectedSkipped.size) return;
+  await api('/contacts/skipped/bulk/delete', { method: 'POST', body: JSON.stringify({ ids: [...selectedSkipped] }) }).catch(() => null);
+  toast('Dismissed selected rows', 'info');
+  await openSkippedModal();
+  loadDashboard();
+}
+async function bulkAddSkippedToContacts() {
+  if (!selectedSkipped.size) return;
+  const campId = document.getElementById('skipped-add-campaign').value;
+  const url = '/contacts/skipped/bulk/add-to-contacts' + (campId ? `?campaign_id=${campId}` : '');
+  const res = await api(url, { method: 'POST', body: JSON.stringify({ ids: [...selectedSkipped] }) }).catch(() => null);
+  if (res) {
+    toast(res.message, res.failed && res.failed.length ? 'info' : 'success');
+    if (res.failed && res.failed.length) {
+      res.failed.forEach(f => console.warn('Could not add row', f.id, '-', f.reason));
+    }
+  }
+  await openSkippedModal();
+  loadContacts(); loadDashboard();
+}
+async function dismissSkipped(id) {
+  await api(`/contacts/skipped/${id}`, { method: 'DELETE' }).catch(() => null);
+  await openSkippedModal();
+  loadDashboard();
+}
+
+// ── Auto duplicate-check (item 3): runs after any add or upload ────────────
+async function checkForNewDuplicates() {
+  const dups = await api('/contacts/duplicates').catch(() => null);
+  if (dups && dups.total_contacts_in_duplicates > 0) {
+    toast(`⚠ ${dups.total_contacts_in_duplicates} possible duplicate contact(s) found — click to review`, 'info');
+    // Make the dashboard duplicates card pulse so it's easy to notice next visit
+    const card = document.getElementById('duplicates-card');
+    if (card) { card.style.animation = 'riseIn .5s ease, pulseCard 1.4s ease 3'; }
+  }
+}
+
+// ── Upload ────────────────────────────────────────────────────
+let uploadFile = null;
+function openUploadModal() {
+  uploadFile = null;
+  document.getElementById('upload-btn').disabled = true;
+  document.getElementById('upload-preview').style.display = 'none';
+  document.getElementById('file-input').value = '';
+  document.getElementById('upload-listtype-group').style.display = (authUser && authUser.role === 'admin') ? 'block' : 'none';
+  document.getElementById('upload-list-type').value = 'prospect';
+  openModal('upload-modal');
+  api('/campaigns/').then(camps => {
+    campaigns = camps;
+    document.getElementById('upload-campaign-id').innerHTML = '<option value="">No campaign</option>' + camps.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  }).catch(() => {});
+}
+function handleFileSelect(e) { if (e.target.files[0]) setUploadFile(e.target.files[0]); }
+function handleDrop(e) { e.preventDefault(); document.getElementById('upload-zone').classList.remove('dragging'); if (e.dataTransfer.files[0]) setUploadFile(e.dataTransfer.files[0]); }
+function setUploadFile(file) {
+  uploadFile = file;
+  document.getElementById('upload-btn').disabled = false;
+  const prev = document.getElementById('upload-preview');
+  prev.style.display = 'block';
+  prev.innerHTML = `<div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:10px 14px;font-size:13px;color:var(--green);display:flex;align-items:center;gap:8px"><strong>${esc(file.name)}</strong> — ${(file.size/1024).toFixed(1)} KB ready to upload</div>`;
+}
+async function submitUpload() {
+  if (!uploadFile) return;
+  const fd = new FormData();
+  fd.append('file', uploadFile);
+  const campId = document.getElementById('upload-campaign-id').value;
+  if (campId) fd.append('campaign_id', campId);
+  if (authUser && authUser.role === 'admin') fd.append('list_type', document.getElementById('upload-list-type').value);
+  try {
+    const headers = {};
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    const r = await fetch(API + '/contacts/upload', { method: 'POST', body: fd, headers });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || 'Upload failed');
+    toast(`✅ Imported ${data.created} contacts` + (data.skipped ? ` (${data.skipped} skipped — see the Skipped Imports section)` : ''), 'success');
+    closeModal('upload-modal');
+    loadDashboard(); loadContacts();
+    await checkForNewDuplicates();
+  } catch (e) { toast('Upload error: ' + e.message, 'error'); }
+}
+
+// ── Campaigns + visual pipeline builder (drag & drop) ───────────
+async function loadCampaigns() {
+  campaigns = await api('/campaigns/').catch(() => []);
+  if (!stepCatalogue.length) {
+    const cat = await api('/campaigns/step-catalogue').catch(() => ({ steps: [] }));
+    stepCatalogue = cat.steps;
+  }
+  const grid = document.getElementById('campaigns-grid');
+  let html = campaigns.map(c => `
+    <div class="campaign-card" onclick="editCampaign(${c.id})">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div class="campaign-name">${esc(c.name)}</div>
+        <span class="badge badge-sent" style="flex-shrink:0">${c.contact_count||0} contacts</span>
+      </div>
+      <div class="campaign-meta">${c.owner_name ? 'By '+esc(c.owner_name)+' · ' : ''}Follow-ups: day ${esc(c.followup_days)} · Max ${c.max_followups}</div>
+      <div class="campaign-vp">${esc((c.value_proposition||'').slice(0,90))}${(c.value_proposition||'').length>90?'...':''}</div>
+      <div class="campaign-steps-preview">${(c.pipeline_steps||[]).map(s => `<span class="step-chip">${esc(stepLabel(s))}</span>`).join('')}</div>
+    </div>`).join('');
+  html += `<div class="campaign-card campaign-add" onclick="openCampaignModal()"><div style="font-size:28px">+</div><div>New Campaign</div></div>`;
+  grid.innerHTML = campaigns.length ? html : `<div class="empty-state"><div class="empty-icon">📋</div><h3>No campaigns yet</h3><p>Create a campaign to design your outreach sequence</p><br><button class="btn btn-primary" onclick="openCampaignModal()">+ New Campaign</button></div>` + `<div class="campaign-card campaign-add" onclick="openCampaignModal()"><div style="font-size:28px">+</div><div>New Campaign</div></div>`;
+}
+function stepLabel(key) { const s = stepCatalogue.find(x => x.key === key); return s ? s.label : key; }
+
+async function ensureStepCatalogue() {
+  if (!stepCatalogue.length) {
+    const cat = await api('/campaigns/step-catalogue').catch(() => ({ steps: [], default_sequence: [] }));
+    stepCatalogue = cat.steps;
+    if (!sequenceSteps.length) sequenceSteps = cat.default_sequence || [];
+  }
+}
+
+function renderBuilder() {
+  const palette = document.getElementById('palette-list');
+  palette.innerHTML = stepCatalogue.map(s => `<div class="palette-item" draggable="true" data-key="${s.key}" ondragstart="onPaletteDragStart(event)">➕ ${esc(s.label)}</div>`).join('');
+  renderSequence();
+}
+function renderSequence() {
+  const seq = document.getElementById('sequence-list');
+  seq.innerHTML = sequenceSteps.map((key, i) => `
+    <div class="sequence-item" draggable="true" data-key="${key}" data-idx="${i}" ondragstart="onSeqDragStart(event)" ondragover="event.preventDefault()" ondrop="onSeqItemDrop(event,${i})">
+      <div class="seq-order">${i+1}</div> ${esc(stepLabel(key))}
+      <span class="remove-x" onclick="removeSequenceStep(${i})">×</span>
+    </div>`).join('') || '<div style="color:var(--muted);font-size:12px;padding:8px">No steps yet — drag from the left.</div>';
+}
+function onPaletteDragStart(e) { e.dataTransfer.setData('text/key', e.target.dataset.key); e.dataTransfer.setData('text/source', 'palette'); }
+function onSeqDragStart(e) { e.dataTransfer.setData('text/idx', e.target.dataset.idx); e.dataTransfer.setData('text/source', 'sequence'); e.target.classList.add('dragging'); }
+function onSequenceDrop(e) {
+  e.preventDefault();
+  const source = e.dataTransfer.getData('text/source');
+  if (source === 'palette') {
+    const key = e.dataTransfer.getData('text/key');
+    sequenceSteps.push(key);
+    renderSequence();
+  }
+  document.querySelectorAll('.sequence-item.dragging').forEach(x => x.classList.remove('dragging'));
+}
+function onSeqItemDrop(e, targetIdx) {
+  e.preventDefault(); e.stopPropagation();
+  const source = e.dataTransfer.getData('text/source');
+  if (source === 'palette') {
+    const key = e.dataTransfer.getData('text/key');
+    sequenceSteps.splice(targetIdx, 0, key);
+  } else {
+    const fromIdx = parseInt(e.dataTransfer.getData('text/idx'));
+    if (isNaN(fromIdx)) return;
+    const [moved] = sequenceSteps.splice(fromIdx, 1);
+    sequenceSteps.splice(targetIdx, 0, moved);
+  }
+  renderSequence();
+}
+function removeSequenceStep(i) { sequenceSteps.splice(i, 1); renderSequence(); }
+
+async function openCampaignModal() {
+  await ensureStepCatalogue();
+  document.getElementById('campaign-id-field').value = '';
+  document.getElementById('campaign-modal-title').textContent = 'New Campaign';
+  document.getElementById('campaign-delete-btn').style.display = 'none';
+  ['camp-name', 'camp-your-name', 'camp-your-company', 'camp-your-role', 'camp-value-prop'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('camp-followup-days').value = '3,7,14';
+  document.getElementById('camp-max-followups').value = '3';
+  sequenceSteps = stepCatalogue.map(s => s.key);
+  renderBuilder();
+  openModal('campaign-modal');
+}
+async function editCampaign(id) {
+  await ensureStepCatalogue();
+  const c = await api(`/campaigns/${id}`).catch(() => null);
+  if (!c) return;
+  document.getElementById('campaign-id-field').value = c.id;
+  document.getElementById('campaign-modal-title').textContent = '✏️ Edit Campaign';
+  document.getElementById('campaign-delete-btn').style.display = 'inline-flex';
+  document.getElementById('camp-name').value = c.name || '';
+  document.getElementById('camp-your-name').value = c.your_name || '';
+  document.getElementById('camp-your-company').value = c.your_company || '';
+  document.getElementById('camp-your-role').value = c.your_role || '';
+  document.getElementById('camp-value-prop').value = c.value_proposition || '';
+  document.getElementById('camp-followup-days').value = c.followup_days || '3,7,14';
+  document.getElementById('camp-max-followups').value = c.max_followups || 3;
+  sequenceSteps = (c.pipeline_steps && c.pipeline_steps.length) ? [...c.pipeline_steps] : stepCatalogue.map(s => s.key);
+  renderBuilder();
+  openModal('campaign-modal');
+}
+async function saveCampaign() {
+  const id = document.getElementById('campaign-id-field').value;
+  const payload = {
+    name: document.getElementById('camp-name').value,
+    your_name: document.getElementById('camp-your-name').value,
+    your_company: document.getElementById('camp-your-company').value,
+    your_role: document.getElementById('camp-your-role').value,
+    value_proposition: document.getElementById('camp-value-prop').value,
+    followup_days: document.getElementById('camp-followup-days').value,
+    max_followups: parseInt(document.getElementById('camp-max-followups').value) || 3,
+    pipeline_steps: sequenceSteps,
+  };
+  if (!payload.name) { toast('Campaign name is required', 'error'); return; }
+  if (id) await api(`/campaigns/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  else await api('/campaigns/', { method: 'POST', body: JSON.stringify(payload) });
+  toast(id ? 'Campaign updated' : 'Campaign created!', 'success');
+  closeModal('campaign-modal');
+  loadCampaigns(); loadDashboard();
+}
+async function deleteCampaign() {
+  const id = document.getElementById('campaign-id-field').value;
+  if (!id || !confirm('Delete this campaign? Contacts will remain but lose their campaign assignment.')) return;
+  await api(`/campaigns/${id}`, { method: 'DELETE' });
+  toast('Campaign deleted', 'info');
+  closeModal('campaign-modal');
+  loadCampaigns(); loadDashboard();
+}
+
+// ── Auth (optional, lightweight multi-user) ─────────────────────
+function setAuthMode(mode) {
+  authMode = mode;
+  document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+  document.getElementById('tab-register').classList.toggle('active', mode === 'register');
+  document.getElementById('auth-name-group').style.display = mode === 'register' ? 'block' : 'none';
+  document.getElementById('auth-submit-btn').textContent = mode === 'register' ? 'Create account' : 'Log in';
+}
+function openAuthModal() {
+  if (authUser) {
+    document.getElementById('auth-logged-in').style.display = 'block';
+    document.getElementById('auth-form-wrap').style.display = 'none';
+    document.getElementById('auth-current-email').textContent = authUser.email;
+    document.getElementById('auth-modal-title').textContent = 'Account';
+    document.querySelector('#auth-modal .modal-footer').style.display = 'none';
+  } else {
+    document.getElementById('auth-logged-in').style.display = 'none';
+    document.getElementById('auth-form-wrap').style.display = 'block';
+    document.getElementById('auth-modal-title').textContent = 'Sign in';
+    document.querySelector('#auth-modal .modal-footer').style.display = 'flex';
+    setAuthMode('login');
+  }
+  openModal('auth-modal');
+}
+async function submitAuth() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const name = document.getElementById('auth-name').value.trim();
+  if (!email || !password) { toast('Email and password are required', 'error'); return; }
+  try {
+    const path = authMode === 'register' ? '/auth/register' : '/auth/login';
+    const body = authMode === 'register' ? { name, email, password } : { email, password };
+    const res = await api(path, { method: 'POST', body: JSON.stringify(body) });
+    token = res.token; authUser = res.user;
+    localStorage.setItem('sf_token', token);
+    updateUserChip();
+    closeModal('auth-modal');
+    toast(`Welcome, ${authUser.name}!`, 'success');
+  } catch (e) { /* toasted already */ }
+}
+function logout() {
+  token = null; authUser = null;
+  localStorage.removeItem('sf_token');
+  updateUserChip();
+  closeModal('auth-modal');
+  toast('Logged out', 'info');
+}
+function updateUserChip() {
+  const name = document.getElementById('user-chip-name');
+  const role = document.getElementById('user-chip-role');
+  const avatar = document.getElementById('user-avatar');
+  const adminNav = document.getElementById('admin-nav-item');
+  if (authUser) {
+    name.textContent = authUser.name;
+    role.textContent = authUser.role === 'admin' ? 'Admin · tap for account' : 'Member · tap for account';
+    avatar.textContent = authUser.name.slice(0, 1).toUpperCase();
+    adminNav.style.display = authUser.role === 'admin' ? 'flex' : 'none';
+  } else {
+    name.textContent = 'Guest mode';
+    role.textContent = 'Tap to sign in';
+    avatar.textContent = '?';
+    adminNav.style.display = 'none';
+  }
+}
+async function tryRestoreSession() {
+  if (!token) return;
+  const me = await api('/auth/me').catch(() => null);
+  if (me) { authUser = me; updateUserChip(); }
+  else { token = null; localStorage.removeItem('sf_token'); }
+}
+
+// ── Admin Panel ──────────────────────────────────────────────
+async function openAdminModal() {
+  if (!authUser || authUser.role !== 'admin') { toast('Admin access required', 'error'); return; }
+  await loadAdminUsers();
+  switchAdminTab('users');
+  document.getElementById('admin-app').classList.add('open');
+}
+function exitAdminApp() {
+  document.getElementById('admin-app').classList.remove('open');
+}
+async function switchAdminTab(tab) {
+  const titles = { users: 'Users', dashboards: 'User Dashboards', activity: 'Activity Monitor' };
+  document.getElementById('admin-page-title').textContent = titles[tab];
+  document.getElementById('admin-tab-users').classList.toggle('active', tab === 'users');
+  document.getElementById('admin-tab-dashboards').classList.toggle('active', tab === 'dashboards');
+  document.getElementById('admin-tab-activity').classList.toggle('active', tab === 'activity');
+  document.getElementById('admin-users-panel').style.display = tab === 'users' ? 'block' : 'none';
+  document.getElementById('admin-dashboards-panel').style.display = tab === 'dashboards' ? 'block' : 'none';
+  document.getElementById('admin-activity-panel').style.display = tab === 'activity' ? 'block' : 'none';
+  if (tab === 'activity') await loadAdminActivity();
+  if (tab === 'dashboards') await loadAdminDashboardsOverview();
+}
+
+// ── User Activity Dashboards (items 2/3) — full-size, same as main dashboard ─
+async function loadAdminDashboardsOverview() {
+  document.getElementById('admin-dashboards-overview').style.display = 'block';
+  document.getElementById('admin-user-detail').style.display = 'none';
+  const data = await api('/auth/users-overview').catch(() => ({ users: [] }));
+  const cards = document.getElementById('admin-users-cards');
+  cards.innerHTML = data.users.map(u => `
+    <div class="admin-user-card ${u.is_active ? '' : 'restricted'}" onclick="openUserDashboard(${u.id})">
+      <div class="auc-name">${esc(u.name)}${!u.is_active ? ' <span style="color:#f87171;font-size:11px">(restricted)</span>' : ''}</div>
+      <div class="auc-count">${u.contact_count}</div>
+      <div class="auc-sub">contacts · ${u.campaign_count} campaigns · ${u.role}</div>
+      <div class="auc-sub">Last login: ${u.last_login_at ? new Date(u.last_login_at).toLocaleDateString() : 'never'}</div>
+    </div>`).join('') || '<div style="color:var(--admin-muted);font-size:13px">No users yet.</div>';
+}
+async function openUserDashboard(userId) {
+  const data = await api(`/auth/users/${userId}/dashboard`).catch(() => null);
+  if (!data) return;
+  document.getElementById('admin-dashboards-overview').style.display = 'none';
+  document.getElementById('admin-user-detail').style.display = 'block';
+  const u = data.user;
+  const s = data.stats;
+  document.getElementById('admin-page-title').textContent = u.name + "'s Dashboard";
+  const content = document.getElementById('admin-user-detail-content');
+  content.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <div class="user-avatar" style="width:48px;height:48px;font-size:18px;background:var(--admin-grad)">${esc(u.name.slice(0,1).toUpperCase())}</div>
+      <div>
+        <div style="font-weight:700;color:#fff;font-size:17px">${esc(u.name)} <span class="badge" style="background:rgba(168,85,247,.2);color:#d8b4fe">${u.role}</span> ${!u.is_active?'<span class="badge badge-hold">Restricted</span>':''}</div>
+        <div style="font-size:12px;color:var(--admin-muted)">${esc(u.email)} · joined ${new Date(u.created_at).toLocaleDateString()} · last login ${u.last_login_at ? new Date(u.last_login_at).toLocaleString() : 'never'}</div>
+      </div>
+    </div>
+    <div class="admin-stats-grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));margin-bottom:22px">
+      <div class="admin-user-card"><div class="auc-sub">Total Contacts</div><div class="auc-count">${s.total}</div></div>
+      <div class="admin-user-card"><div class="auc-sub">Pending</div><div class="auc-count">${s.pending||0}</div></div>
+      <div class="admin-user-card"><div class="auc-sub">Draft Ready</div><div class="auc-count">${s.draft_ready||0}</div></div>
+      <div class="admin-user-card"><div class="auc-sub">Sent</div><div class="auc-count">${s.sent||0}</div></div>
+      <div class="admin-user-card"><div class="auc-sub">Replied</div><div class="auc-count">${s.replied||0}</div></div>
+      <div class="admin-user-card"><div class="auc-sub">Skipped</div><div class="auc-count">${s.skipped||0}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div style="font-weight:700;color:#fff;margin-bottom:10px;font-size:13.5px">Campaigns (${data.campaigns.length})</div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          ${data.campaigns.map(c => `<div class="admin-row-card" style="justify-content:space-between"><span>${esc(c.name)}</span><strong>${c.contact_count}</strong></div>`).join('') || '<div style="color:var(--admin-muted);font-size:12px">No campaigns yet.</div>'}
+        </div>
+      </div>
+      <div>
+        <div style="font-weight:700;color:#fff;margin-bottom:10px;font-size:13.5px">Recent Activity</div>
+        <div style="display:flex;flex-direction:column;gap:6px;max-height:280px;overflow:auto">
+          ${data.recent_activity.map(a => `<div class="admin-activity-row"><div style="flex:1"><strong style="color:var(--admin-accent)">${esc(a.type)}</strong> — ${esc(a.detail||'')}<div style="color:var(--admin-muted);font-size:10px;margin-top:2px">${new Date(a.created_at).toLocaleString()}</div></div></div>`).join('') || '<div style="color:var(--admin-muted);font-size:12px">No activity yet.</div>'}
+        </div>
+      </div>
+    </div>`;
+}
+function backToUsersOverview() { document.getElementById('admin-page-title').textContent = 'User Dashboards'; loadAdminDashboardsOverview(); }
+
+async function loadAdminActivity() {
+  const data = await api('/auth/activity').catch(() => ({ feed: [], per_user_counts: {} }));
+  const counts = document.getElementById('admin-activity-counts');
+  counts.innerHTML = Object.entries(data.per_user_counts).map(([user, n]) =>
+    `<span class="badge" style="background:rgba(168,85,247,.18);color:#d8b4fe">${esc(user)}: ${n}</span>`).join('') || '<span style="color:var(--admin-muted);font-size:12px">No activity yet.</span>';
+  const list = document.getElementById('admin-activity-list');
+  list.innerHTML = data.feed.map(a => `
+    <div class="admin-activity-row">
+      <div style="min-width:150px;color:var(--admin-muted)">${new Date(a.created_at).toLocaleString()}</div>
+      <div style="min-width:90px;font-weight:700;color:#fff">${esc(a.user)}</div>
+      <div style="flex:1"><span style="color:var(--admin-accent);font-weight:600">${esc(a.activity_type)}</span> — ${esc(a.contact_name||'')} ${esc(a.detail||'')}</div>
+    </div>`).join('') || '<div style="color:var(--admin-muted);font-size:13px">No activity recorded yet.</div>';
+}
+async function loadAdminUsers() {
+  const users = await api('/auth/users').catch(() => []);
+  const list = document.getElementById('admin-users-list');
+  list.innerHTML = users.map(u => `
+    <div class="admin-row-card" style="${!u.is_active?'opacity:.6':''}">
+      <div class="user-avatar" style="flex-shrink:0;background:var(--admin-grad)">${esc(u.name.slice(0,1).toUpperCase())}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;color:#fff;font-size:13px">${esc(u.name)} ${u.id===authUser.id?'<span style=\"color:var(--admin-muted);font-weight:400\">(you)</span>':''}</div>
+        <div style="font-size:11.5px;color:var(--admin-muted)">${esc(u.email)} · ${u.is_active ? '' : 'Restricted · '}${u.role}</div>
+      </div>
+      <select onchange="adminSetRole(${u.id}, this.value)" ${u.id===authUser.id?'disabled':''} style="width:110px">
+        <option value="member" ${u.role==='member'?'selected':''}>Member</option>
+        <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
+      </select>
+      <button class="btn admin-btn-ghost btn-xs" onclick="adminToggleActive(${u.id}, ${u.is_active})" ${u.id===authUser.id?'disabled':''}>${u.is_active?'Restrict':'Unrestrict'}</button>
+      <button class="btn btn-danger btn-xs" onclick="adminDeleteUser(${u.id})" ${u.id===authUser.id?'disabled':''}>Delete</button>
+    </div>`).join('');
+}
+async function adminSetRole(userId, role) {
+  await api(`/auth/users/${userId}/role`, { method: 'POST', body: JSON.stringify({ role }) }).catch(() => null);
+  toast('Role updated', 'success');
+  loadAdminUsers();
+}
+async function adminToggleActive(userId, currentlyActive) {
+  await api(`/auth/users/${userId}/active`, { method: 'POST', body: JSON.stringify({ is_active: !currentlyActive }) }).catch(() => null);
+  toast(currentlyActive ? 'User restricted' : 'User unrestricted', 'success');
+  loadAdminUsers();
+}
+async function adminDeleteUser(userId) {
+  if (!confirm('Delete this user? Their campaigns/contacts remain but become unowned.')) return;
+  await api(`/auth/users/${userId}`, { method: 'DELETE' }).catch(() => null);
+  toast('User deleted', 'info');
+  loadAdminUsers();
+}
+
+// ── Boot ──────────────────────────────────────────────────────
+(async function boot() {
+  await tryRestoreSession();
+  await loadCampaigns().catch(() => {});
+  await loadDashboard();
+  setInterval(initMagnetic, 2000);
+  initMagnetic();
+})();
+</script>
+</body>
+</html>
