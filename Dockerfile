@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM mcr.microsoft.com/playwright/python:v1.44.0-jammy
 
 WORKDIR /app
 
@@ -8,8 +8,7 @@ ENV PIP_NO_CACHE_DIR=1
 COPY requirements.txt .
 
 RUN pip install --upgrade pip \
-    && pip install -r requirements.txt \
-    && playwright install --with-deps chromium
+    && pip install -r requirements.txt
 
 COPY . .
 
